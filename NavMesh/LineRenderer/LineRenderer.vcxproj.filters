@@ -41,12 +41,6 @@
       <Filter>ThirdParty\imgui</Filter>
     </ClCompile>
     <ClCompile Include="EntryPoint.cpp" />
-    <ClCompile Include="Example.cpp">
-      <Filter>Game\Examples</Filter>
-    </ClCompile>
-    <ClCompile Include="DotClicker.cpp">
-      <Filter>Game\Examples</Filter>
-    </ClCompile>
     <ClCompile Include="Vec2.cpp">
       <Filter>Engine</Filter>
     </ClCompile>
@@ -58,6 +52,33 @@
     </ClCompile>
     <ClCompile Include="TextStream.cpp">
       <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="PathAgent.cpp">
+      <Filter>Game\Path Finding</Filter>
+    </ClCompile>
+    <ClCompile Include="NodeGraph.cpp">
+      <Filter>Game\Path Finding</Filter>
+    </ClCompile>
+    <ClCompile Include="NavigationMesh.cpp">
+      <Filter>Game\Mesh Generation</Filter>
+    </ClCompile>
+    <ClCompile Include="NavigationUtilities.cpp">
+      <Filter>Game\Path Finding</Filter>
+    </ClCompile>
+    <ClCompile Include="Obstacle.cpp">
+      <Filter>Game\Mesh Generation</Filter>
+    </ClCompile>
+    <ClCompile Include="Edge.cpp">
+      <Filter>Game\Mesh Generation</Filter>
+    </ClCompile>
+    <ClCompile Include="Grid.cpp">
+      <Filter>Game\World Generation</Filter>
+    </ClCompile>
+    <ClCompile Include="World.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Utility.cpp">
+      <Filter>Game</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -118,12 +139,6 @@
     <ClInclude Include="..\imgui\imstb_truetype.h">
       <Filter>ThirdParty\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Example.h">
-      <Filter>Game\Examples</Filter>
-    </ClInclude>
-    <ClInclude Include="DotClicker.h">
-      <Filter>Game\Examples</Filter>
-    </ClInclude>
     <ClInclude Include="Application.h">
       <Filter>Engine</Filter>
     </ClInclude>
@@ -142,6 +157,42 @@
     <ClInclude Include="Key.h">
       <Filter>Engine</Filter>
     </ClInclude>
+    <ClInclude Include="PathAgent.h">
+      <Filter>Game\Path Finding</Filter>
+    </ClInclude>
+    <ClInclude Include="NodeGraph.h">
+      <Filter>Game\Path Finding</Filter>
+    </ClInclude>
+    <ClInclude Include="Node.h">
+      <Filter>Game\Path Finding</Filter>
+    </ClInclude>
+    <ClInclude Include="NavigationMesh.h">
+      <Filter>Game\Mesh Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="Triangle.h">
+      <Filter>Game\Mesh Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="NavigationUtilities.h">
+      <Filter>Game\Path Finding</Filter>
+    </ClInclude>
+    <ClInclude Include="Obstacle.h">
+      <Filter>Game\Mesh Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="Edge.h">
+      <Filter>Game\Mesh Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="Grid.h">
+      <Filter>Game\World Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>Game\World Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="World.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility.h">
+      <Filter>Game</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Engine">
@@ -159,8 +210,14 @@
     <Filter Include="ThirdParty\imgui">
       <UniqueIdentifier>{af08b8df-298e-486a-bd88-f49c10c0050b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Game\Examples">
-      <UniqueIdentifier>{777b1260-7118-49ab-b296-237fdabebca0}</UniqueIdentifier>
+    <Filter Include="Game\Mesh Generation">
+      <UniqueIdentifier>{20cc452a-b1a2-490b-8379-eb9e519d2d5f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Game\World Generation">
+      <UniqueIdentifier>{6537558b-c335-41a5-81af-de1114566593}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Game\Path Finding">
+      <UniqueIdentifier>{cd8fc455-bed6-4959-a953-3dc1a320cb6f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

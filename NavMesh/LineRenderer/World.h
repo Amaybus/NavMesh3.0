@@ -2,18 +2,32 @@
 
 #include "Application.h"
 #include "Grid.h"
+#include "Obstacle.h"
 #include "PathAgent.h"
 #include "NodeGraph.h"
-#include "NavMesh.h"
+#include "NavigationMesh.h"
+#include "Vec2.h"
 
 #include <vector>
 
 class World : public Application
 {
+	enum MoveDirection
+	{
+		RIGHT,
+		DOWN,
+		LEFT,
+		UP
+	};
+
+
 	NodeGraph* mNodeGraph = nullptr;
-	NavMesh* mNavMesh = nullptr;
+	NavigationMesh* mNavMesh = nullptr;
 	std::vector<Obstacle*> mObstacles;
 	std::vector<PathAgent*> mPathAgents;
+
+	bool shouldrun = false;
+	Vec2 pos = Vec2(2,2); 
 
 public:
 	World();
@@ -26,5 +40,7 @@ public:
 	void Draw(LineRenderer* lines);
 
 	std::vector<Vec2> LineTrace(Vec2 startPos, Grid& grid);
+	Vec2 SwitchDirection(int moveDirIdex);
+	std::vector<Obstacle*>& GetObstacles() { return mObstacles; }
 };
 

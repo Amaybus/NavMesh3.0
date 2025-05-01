@@ -1,11 +1,11 @@
 #include "ApplicationHarness.h"
 
 //Include the necessary header file here for your game type
-#include "Example.h"
+#include "World.h"
 
 int main()
 {
-	ApplicationHarness program(new Example());	//Create a new instance of your application type to pass into the harness here.
+	ApplicationHarness program(new World());	//Create a new instance of your application type to pass into the harness here.
 
 	program.Run();
 

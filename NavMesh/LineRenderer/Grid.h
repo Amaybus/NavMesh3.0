@@ -6,20 +6,21 @@
 enum class TileType
 {
 	EMPTY = 0xFFFFFF,
-	OBSTACLE = 0x000000,
-	POINT = 0x0000FF
+	OBSTACLE = 0x0000FF,
+	OUTSIDE = 0x000000
 };
 
 class Grid
 {
 	TileType* data = nullptr;
-	int width;
-	int height;
+	int mWidth;
+	int mHeight;
+	float mCellSize;
 	
 
 public:
 
-	Grid() = default;
+	Grid(float size);
 	void LoadFromImage(std::string filename);
 
 	TileType& At(int xCoord, int yCoord);
@@ -30,7 +31,8 @@ public:
 	Grid(Grid& other) = delete;
 	Grid& operator=(Grid& other) = delete;
 
-	int GetHeight() const { return height; }
-	int GetWidth() const { return width; }
+	int GetHeight() const { return mHeight; }
+	int GetWidth() const { return mWidth; }
+	float GetCellSize() const{ return mCellSize; }
 
 };

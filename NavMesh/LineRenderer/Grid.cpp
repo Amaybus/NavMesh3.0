@@ -9,24 +9,28 @@
 #include <iostream>
 
 
+Grid::Grid(float size) : mCellSize(size)
+{
+}
+
 void Grid::LoadFromImage(std::string filename)
 {
 	delete[] data;
 	
 	int channelCount;
-	unsigned char *imageData = stbi_load(filename.c_str(), &width, &height, &channelCount, 4);
+	unsigned char *imageData = stbi_load(filename.c_str(), &mWidth, &mHeight, &channelCount, 4);
 
 
-	data = new TileType[width * height];
+	data = new TileType[mWidth * mHeight];
 
-	std::cout << "Width is: " << width << ", height is: " << height << ", channel count is: " << channelCount << "\n";
-	for (int y = 0; y < height; y++)
+	std::cout << "Width is: " << mWidth << ", height is: " << mHeight << ", channel count is: " << channelCount << "\n";
+	for (int y = 0; y < mHeight; y++)
 	{
-		for (int x = 0; x < width; x++)
+		for (int x = 0; x < mWidth; x++)
 		{
 			//data[x + y * width] = *((unsigned int*) &imageData[(x + y * width) * 4]);
 
-			int integerIndex = x + y * width;
+			int integerIndex = x + y * mWidth;
 			int charIndex = integerIndex * sizeof(int);
 			imageData[charIndex + 3] = 0;
 
@@ -40,23 +44,23 @@ void Grid::LoadFromImage(std::string filename)
 
 TileType& Grid::At(int xCoord, int yCoord)
 {
-	return data[xCoord + yCoord * width];
+	return data[xCoord + yCoord * mWidth];
 }
 TileType& Grid::AtWrap(int xCoord, int yCoord)
 {
-	xCoord = xCoord % width;
-	if (xCoord < 0) xCoord += width;
-	yCoord = yCoord % height;
-	if (yCoord < 0) yCoord += height;
+	xCoord = xCoord % mWidth;
+	if (xCoord < 0) xCoord += mWidth;
+	yCoord = yCoord % mHeight;
+	if (yCoord < 0) yCoord += mHeight;
 
-	return data[xCoord + yCoord * width];
+	return data[xCoord + yCoord * mWidth];
 }
 TileType& Grid::AtClamp(int xCoord, int yCoord)
 {
-	xCoord = Clamp(xCoord, 0, width - 1);
-	yCoord = Clamp(yCoord, 0, height - 1);
+	xCoord = Clamp(xCoord, 0, mWidth - 1);
+	yCoord = Clamp(yCoord, 0, mHeight - 1);
 
-	return data[xCoord + yCoord * width];
+	return data[xCoord + yCoord * mWidth];
 }
 
 Grid::~Grid()
