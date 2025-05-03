@@ -27,7 +27,7 @@ World::~World()
 void World::Initialise()
 {
 	// Create level from file
-	Grid level(100);
+	Grid level(1000);
 	level.LoadFromImage("Test.png");
 
 	// Create nav mesh with dimensions of the file
@@ -49,7 +49,7 @@ void World::Initialise()
 			// Start defining the inner region
 			if (level.At(x, y) == TileType::EMPTY && !isInnerRegionDefined)
 			{
-				std::vector<Vec2> navPoints = LineTrace(Vec2(x, y), level);
+				std::vector<Vec2> navPoints = LineTrace(Vec2(x, y), level, TileType::EMPTY);
 				mNavMesh->AddPointList(navPoints);
 	
 				isInnerRegionDefined = true;
@@ -59,13 +59,32 @@ void World::Initialise()
 			// Define obstacle regions
 			if (level.At(x, y) == TileType::OBSTACLE)
 			{
-				std::vector<Vec2> obPoints = LineTrace(Vec2(x, y), level);
+				// Skip any tiles which are already in an obstacle
+				if (IsPointInObstacle(Vec2(x, y), mObstacles, level.GetWidth())) { continue; }
+
+				std::vector<Vec2> obPoints = LineTrace(Vec2(x, y), level, TileType::OBSTACLE);
 				Obstacle* ob = new Obstacle(obPoints);
 				mObstacles.push_back(ob);
 	
 				continue;
 			}
 		}
+	}
+
+	// scale points and obstacles to fix the level size
+	for (Obstacle* ob : mObstacles)
+	{
+		std::vector<Vec2>& points = ob->GetPoints();
+		for (Vec2& v : points)
+		{
+			//v = Vec2(v.x, -(v.y)) * level.GetCellSize();
+			v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
+		}
+	}
+
+	for (Vec2& v : mNavMesh->GetPoints())
+	{
+		v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
 	}
 
 	mNavMesh->Build();
@@ -94,9 +113,8 @@ void World::Draw(LineRenderer* lines)
 	}
 }
 
-std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid)
+std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid, TileType tileType)
 {
-	//float halfSize = grid.GetCellSize() * 0.5f;
 	std::vector<Vec2> returnPoints;
 	// Add our first point to the list
 	returnPoints.push_back(Vec2(startPos.x - 0.5f, startPos.y - 0.5f));
@@ -106,8 +124,7 @@ std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid)
 
 	Vec2 primDir = Vec2(1, 0);
 	Vec2 secDir = Vec2(0, -1);
-	//Vec2 currentPos = startPos;
-	Vec2 currentPos = pos;
+	Vec2 currentPos = startPos;
 	bool shouldSwitchDirection = false;
 
 	// Start moving right
@@ -118,19 +135,20 @@ std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid)
 			primDir = SwitchDirection(primIndex);
 			secDir = SwitchDirection(secIndex);
 			shouldSwitchDirection = false;
+
+			if (Vector2IsEqual(currentPos + primDir, startPos)) { break; }
+
+			currentPos += primDir;
 		}
 
-		if ((grid.At(currentPos.x + secDir.x, currentPos.y + secDir.y) == TileType::OBSTACLE || grid.At(currentPos.x + secDir.x, currentPos.y + secDir.y) == TileType::OUTSIDE) &&
-			grid.At(currentPos.x + primDir.x, currentPos.y + primDir.y) == TileType::EMPTY)
+		if (grid.At(currentPos.x + secDir.x, currentPos.y + secDir.y) != tileType && grid.At(currentPos.x + primDir.x, currentPos.y + primDir.y) == tileType)
 		{
 			// Move forward a tile
 			currentPos += primDir;
-			pos = currentPos;
 		}
 
 		// Hit a concave corner, turn clockwise
-		else if ((grid.At(currentPos.x + secDir.x, currentPos.y + secDir.y) == TileType::OBSTACLE || grid.At(currentPos.x + secDir.x, currentPos.y + secDir.y) == TileType::OUTSIDE) &&
-			(grid.At(currentPos.x + primDir.x, currentPos.y + primDir.y) == TileType::OBSTACLE || grid.At(currentPos.x + primDir.x, currentPos.y + primDir.y) == TileType::OUTSIDE))
+		else if (grid.At(currentPos.x + secDir.x, currentPos.y + secDir.y) != tileType && grid.At(currentPos.x + primDir.x, currentPos.y + primDir.y) != tileType)
 		{
 			// Find mid point of tile at primary position and tile at secondary position
 			Vec2 pointToAdd = ((currentPos + secDir) + (currentPos + primDir)) * 0.5;
@@ -143,17 +161,17 @@ std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid)
 		}
 
 		// Hit a convex corner
-		else if ((grid.At(currentPos.x + secDir.x, currentPos.y + secDir.y) == TileType::OBSTACLE || grid.At(currentPos.x + secDir.x, currentPos.y + secDir.y) == TileType::OUTSIDE))
+		else if ((grid.At(currentPos.x + secDir.x, currentPos.y + secDir.y) == tileType && grid.At(currentPos.x + secDir.x, currentPos.y + secDir.y) == tileType))
 		{
 			// Find mid point of tile at primary position and tile at secondary position
-			Vec2 flippedPrim = SwitchDirection(primIndex - 2);
+			Vec2 flippedPrim = SwitchDirection((primIndex + 2) % 4);
 
-			Vec2 pointToAdd = ((currentPos + secDir) + (currentPos + flippedPrim) * 0.5);
+			Vec2 pointToAdd = (((currentPos + secDir) + (currentPos + flippedPrim)) * 0.5);
 			returnPoints.push_back(pointToAdd);
 
 			// Update movement values
-			primIndex = (primIndex - 1) % 4;
-			secIndex = (secIndex - 1) % 4;
+			primIndex = (primIndex + 3) % 4;
+			secIndex = (secIndex + 3) % 4;
 			shouldSwitchDirection = true;
 		}
 	}

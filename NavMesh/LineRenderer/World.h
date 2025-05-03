@@ -26,8 +26,6 @@ class World : public Application
 	std::vector<Obstacle*> mObstacles;
 	std::vector<PathAgent*> mPathAgents;
 
-	bool shouldrun = false;
-	Vec2 pos = Vec2(2,2); 
 
 public:
 	World();
@@ -39,7 +37,7 @@ public:
 	void Update(float delta) override;
 	void Draw(LineRenderer* lines);
 
-	std::vector<Vec2> LineTrace(Vec2 startPos, Grid& grid);
+	std::vector<Vec2> LineTrace(Vec2 startPos, Grid& grid, TileType tileType);
 	Vec2 SwitchDirection(int moveDirIdex);
 	std::vector<Obstacle*>& GetObstacles() { return mObstacles; }
 };
