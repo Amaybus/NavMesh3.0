@@ -1,0 +1,532 @@
+
+#include "DelauneyTriangulation.h"
+#include "Triangle.h"
+#include "Utility.h"
+#include "Grid.h"
+#include "Edge.h"
+#include "Vec2.h"
+
+std::vector<Triangle> DelauneyTriangulate(std::vector<Vec2>& points, Grid& grid)
+{
+	// List of triangles we are expanding when a new triangle is created, to check for the delaunay-ness of them
+	std::vector<Triangle> triangleStack;
+
+	float height = grid.GetHeight();
+	float width = grid.GetWidth();
+
+
+	// Create super triangle
+	Vec2 superTriangle[3];
+	superTriangle[0] = (Vec2{ -100000,-100000 });
+	superTriangle[1] = (Vec2{ 100000,100000 });
+	superTriangle[2] = (Vec2{ 100000,-100000 });
+	triangleStack.push_back(CreateClockwiseTriangle(superTriangle));
+
+	// Loop through each point
+	for (int i = 0; i < points.size(); i++)
+	{
+		int index = 0;
+		// Find triangle that encloses the point we are checking
+		for (int j = 0; j < triangleStack.size(); j++)
+		{
+			// Search the list of triangles to see if the point is within
+			if (PointInTriangle(points[i], triangleStack[j].mPoints[0], triangleStack[j].mPoints[1], triangleStack[j].mPoints[2]))
+			{
+				index = j;
+				break;
+			}
+		}
+
+		// Create new triangles with the added point to the vertices of the triangle which it falls into
+		std::vector<Triangle> potentialTriangles;
+		potentialTriangles.push_back(CreateClockwiseTriangle(std::vector<Vec2> {points[i], triangleStack[index].mPoints[0], triangleStack[index].mPoints[1]}));
+		potentialTriangles.push_back(CreateClockwiseTriangle(std::vector<Vec2> {points[i], triangleStack[index].mPoints[1], triangleStack[index].mPoints[2]}));
+		potentialTriangles.push_back(CreateClockwiseTriangle(std::vector<Vec2> {points[i], triangleStack[index].mPoints[2], triangleStack[index].mPoints[0]}));
+
+		// Remove the triangle we just replaced (the one that contained the point we are adding)
+		triangleStack.erase(triangleStack.begin() + index);
+
+		// Check if any newly created triangles have collinear points
+		CollinearTriangleCheck triCheck = CheckListForCollinearPoints(potentialTriangles);
+
+		// Add the valid triangles to the stack
+		for (Triangle tri : triCheck.returnTriangles)
+		{
+			ConstructTriangleEdges(tri);
+			triangleStack.push_back(tri);
+		}
+
+		// If collinear triangle is found, resolve them by creating 2 new triangles out of the collinear triangle and another triangle containing the other two vertices of the collinear triangle that isn't the newly added point
+		if (!triCheck.collinearTriangles.empty())
+		{
+			std::vector<Triangle> result = ResolveCollinearTriangles(triCheck.collinearTriangles, points[i], triangleStack);
+			// Add the newly fixed triangles to the stack
+			for (Triangle tri : result)
+			{
+				triangleStack.push_back(tri);
+			}
+		}
+
+		// If the stack is empty, then there is nothing left for us to check. Move on to adding the next point in the list
+		if (triangleStack.empty()) { continue; }
+
+		// Check if p lies inside its circumcircle
+		for (int k = (int)triangleStack.size() - 1; k > 0; k--)
+		{
+			CheckCircumcircle(triangleStack[k], k, points[i], triangleStack);
+		}
+	}
+
+	for (int i = 0; i < points.size(); i++)
+	{
+		for (int j = 0; j < triangleStack.size(); j++)
+		{
+			CheckCircumcircle(triangleStack[j], j, points[i], triangleStack);
+		}
+	}
+
+	// After all points are added, remove all triangles connected with the super triangle vertices
+	std::vector<Triangle> returnList;
+	for (int l = (int)triangleStack.size() - 1; l >= 0; l--)
+	{
+		if (std::find(std::begin(triangleStack[l].mPoints), std::end(triangleStack[l].mPoints), superTriangle[0]) == std::end(triangleStack[l].mPoints))
+		{
+			if (std::find(std::begin(triangleStack[l].mPoints), std::end(triangleStack[l].mPoints), superTriangle[1]) == std::end(triangleStack[l].mPoints))
+			{
+				if (std::find(std::begin(triangleStack[l].mPoints), std::end(triangleStack[l].mPoints), superTriangle[2]) == std::end(triangleStack[l].mPoints))
+				{
+					returnList.push_back(triangleStack[l]);
+				}
+			}
+		}
+	}
+
+	AssignEdgesAndAdjTris(returnList);
+
+	return returnList;
+}
+
+std::vector<Triangle> ConstrainedDelauneyTriangulation(std::vector<Triangle>& listOfTriangles, const std::vector<Obstacle>& obstacles)
+{
+	return std::vector<Triangle>();
+}
+
+void AssignEdgesAndAdjTris(std::vector<Triangle>& listOfTriangles)
+{
+	for (Triangle& t : listOfTriangles)
+	{
+		ConstructTriangleEdges(t);
+		ConstructAdjacentTriangles(t, listOfTriangles);
+	}
+}
+
+
+Triangle CreateClockwiseTriangle(Vec2 points[])
+{
+	Vec2 ba = points[1] - points[0];
+	Vec2 ca = points[2] - points[0];
+
+	if (PseudoCross(ba, ca) > 0)
+	{
+		Vec2 temp = points[2];
+		points[2] = points[1];
+		points[1] = temp;
+	}
+
+	Triangle triangle;
+
+	triangle.mPoints[0] = points[0];
+	triangle.mPoints[1] = points[1];
+	triangle.mPoints[2] = points[2];
+
+	return triangle;
+}
+
+Triangle CreateClockwiseTriangle(std::vector<Vec2> points)
+{
+	Vec2 triangle[3];
+	triangle[0] = points[0];
+	triangle[1] = points[1];
+	triangle[2] = points[2];
+
+	return CreateClockwiseTriangle(triangle);
+}
+
+bool PointInTriangle(const Vec2& point, const Vec2& a, const Vec2& b, const Vec2& c)
+{
+	// Get vector for each line in triangle
+	Vec2 ab = Vec2{ b.x - a.x, b.y - a.y };
+	Vec2 bc = Vec2{ c.x - b.x, c.y - b.y };
+	Vec2 ca = Vec2{ a.x - c.x, a.y - c.y };
+
+	// Get vector for each vertex in triangle to point
+	Vec2 ap = Vec2{ point.x - a.x, point.y - a.y };
+	Vec2 bp = Vec2{ point.x - b.x, point.y - b.y };
+	Vec2 cp = Vec2{ point.x - c.x, point.y - c.y };
+
+	// Cross vectors to check
+	float one = PseudoCross(ap, ab);
+	float two = PseudoCross(bp, bc);
+	float three = PseudoCross(cp, ca);
+
+	// If all points return the same sign then the point is inside the triangle
+	if ((one <= 0 && two <= 0 && three <= 0) ||
+		(one >= 0 && two >= 0 && three >= 0))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+CollinearTriangleCheck CheckListForCollinearPoints(const std::vector<Triangle> trianglesToCheck)
+{
+	float threshold = 0.0001f;
+
+	CollinearTriangleCheck returnList;
+	for (int i = 0; i < trianglesToCheck.size(); i++)
+	{
+		Vec2 ab = trianglesToCheck[i].mPoints[1] - trianglesToCheck[i].mPoints[0];
+		Vec2 ac = trianglesToCheck[i].mPoints[2] - trianglesToCheck[i].mPoints[0];
+		float result = PseudoCross(ab, ac);
+		if (abs(result) >= threshold || abs(result) <= threshold)
+		{
+			returnList.returnTriangles.push_back(trianglesToCheck[i]);
+		}
+		else
+		{
+			returnList.collinearTriangles.push_back(trianglesToCheck[i]);
+		}
+	}
+
+	return returnList;
+}
+
+std::vector<Triangle> ResolveCollinearTriangles(const std::vector<Triangle>& collinearTriangles, const Vec2& pointToFind, std::vector<Triangle>& listToCheck)
+{
+	std::vector<Triangle> returnTris;
+	Triangle newTri1;
+	Triangle newTri2;
+	for (Triangle colTri : collinearTriangles)
+	{
+		for (int i = 0; i < listToCheck.size(); i++)
+		{
+			if (std::find(std::begin(listToCheck[i].mPoints), std::end(listToCheck[i].mPoints), colTri.mPoints[0]) != std::end(listToCheck[i].mPoints) && std::find(std::begin(listToCheck[i].mPoints), std::end(listToCheck[i].mPoints), colTri.mPoints[1]) != std::end(listToCheck[i].mPoints)
+				&& std::find(std::begin(listToCheck[i].mPoints), std::end(listToCheck[i].mPoints), pointToFind) == std::end(listToCheck[i].mPoints))
+			{
+				newTri1.mPoints[0] = pointToFind;
+				newTri1.mPoints[1] = colTri.mPoints[2];
+				newTri1.mPoints[2] = colTri.mPoints[0];
+				returnTris.push_back(CreateClockwiseTriangle(newTri1.mPoints));
+
+				newTri2.mPoints[0] = pointToFind;
+				newTri2.mPoints[1] = colTri.mPoints[2];
+				newTri2.mPoints[2] = colTri.mPoints[1];
+				returnTris.push_back(CreateClockwiseTriangle(newTri2.mPoints));
+
+				listToCheck.erase(listToCheck.begin() + i);
+				break;
+			}
+
+			if (std::find(std::begin(listToCheck[i].mPoints), std::end(listToCheck[i].mPoints), colTri.mPoints[0]) != std::end(listToCheck[i].mPoints) && std::find(std::begin(listToCheck[i].mPoints), std::end(listToCheck[i].mPoints), colTri.mPoints[2]) != std::end(listToCheck[i].mPoints)
+				&& std::find(std::begin(listToCheck[i].mPoints), std::end(listToCheck[i].mPoints), pointToFind) == std::end(listToCheck[i].mPoints))
+			{
+				newTri1.mPoints[0] = pointToFind;
+				newTri1.mPoints[1] = listToCheck[i].mPoints[1];
+				newTri1.mPoints[2] = listToCheck[i].mPoints[0];
+				returnTris.push_back(CreateClockwiseTriangle(newTri1.mPoints));
+
+				newTri2.mPoints[0] = pointToFind;
+				newTri2.mPoints[1] = listToCheck[i].mPoints[1];
+				newTri2.mPoints[2] = listToCheck[i].mPoints[2];
+				returnTris.push_back(CreateClockwiseTriangle(newTri2.mPoints));
+
+				listToCheck.erase(listToCheck.begin() + i);
+				break;
+			}
+
+			if (std::find(std::begin(listToCheck[i].mPoints), std::end(listToCheck[i].mPoints), colTri.mPoints[1]) != std::end(listToCheck[i].mPoints) && std::find(std::begin(listToCheck[i].mPoints), std::end(listToCheck[i].mPoints), colTri.mPoints[2]) != std::end(listToCheck[i].mPoints)
+				&& std::find(std::begin(listToCheck[i].mPoints), std::end(listToCheck[i].mPoints), pointToFind) == std::end(listToCheck[i].mPoints))
+			{
+				newTri1.mPoints[0] = pointToFind;
+				newTri1.mPoints[1] = listToCheck[i].mPoints[1];
+				newTri1.mPoints[2] = listToCheck[i].mPoints[0];
+				returnTris.push_back(CreateClockwiseTriangle(newTri1.mPoints));
+
+				newTri2.mPoints[0] = pointToFind;
+				newTri2.mPoints[1] = listToCheck[i].mPoints[2];
+				newTri2.mPoints[2] = listToCheck[i].mPoints[0];
+				returnTris.push_back(CreateClockwiseTriangle(newTri2.mPoints));
+
+				listToCheck.erase(listToCheck.begin() + i);
+				break;
+			}
+		}
+	}
+	return returnTris;
+}
+
+void ConstructTriangleEdges(Triangle& triangle)
+{
+	Vec2 next;
+
+	for (size_t i = 0; i < 3; i++)
+	{
+		if (i == 3 - 1) { next = triangle.mPoints[0]; }
+		else(next = triangle.mPoints[i + 1]);
+
+		triangle.mEdgeList[i].mPoints[0] = triangle.mPoints[i];
+		triangle.mEdgeList[i].mPoints[1] = next;
+	}
+}
+
+void CheckCircumcircle(Triangle& triangle, int triangleIndex, const Vec2& pointToCheck, std::vector<Triangle>& listToCheck)
+{
+	// Don't check any triangles that contain the point already
+	if (std::find(std::begin(triangle.mPoints), std::end(triangle.mPoints), pointToCheck) != std::end(triangle.mPoints)) { return; }
+
+	// https://stackoverflow.com/questions/56224824/how-do-i-find-the-circumcenter-of-the-triangle-using-python-without-external-lib
+	Vec2 a = triangle.mPoints[0];
+	Vec2 b = triangle.mPoints[1];
+	Vec2 c = triangle.mPoints[2];
+
+	float d = 2 * ((a.x * (b.y - c.y)) + (b.x * (c.y - a.y)) + (c.x * (a.y - b.y)));
+	float x = ((((a.x * a.x) + (a.y * a.y)) * (b.y - c.y)) + ((b.x * b.x + b.y * b.y) * (c.y - a.y)) + (((c.x * c.x) + (c.y * c.y)) * (a.y - b.y))) / d;
+	float y = (((a.x * a.x + a.y * a.y) * (c.x - b.x)) + ((b.x * b.x + b.y * b.y) * (a.x - c.x)) + ((c.x * c.x + c.y * c.y) * (b.x - a.x))) / d;
+
+	Vec2 circumcenter = Vec2{ x,y };
+
+	// Get lengths of each side
+	float ab = (triangle.mPoints[1] - triangle.mPoints[0]).GetMagnitude();
+	float bc = (triangle.mPoints[2] - triangle.mPoints[1]).GetMagnitude();
+	float ca = (triangle.mPoints[0] - triangle.mPoints[2]).GetMagnitude();
+
+	// Triangles half perimeter
+	float s = (ab + bc + ca) * 0.5f;
+
+	// Find area using Heron's formula
+	float area = sqrt((s * (s - ab) * (s - bc) * (s - ca)));
+
+	// Find the radius of the circumcircle
+	float radius = (ab * bc * ca) / (4 * area);
+
+	float displacement = (pointToCheck - circumcenter).GetMagnitude();
+	if (displacement < radius - 0.1)
+	{
+		SwapTriangles(triangle, triangleIndex, pointToCheck, listToCheck);
+	}
+}
+
+void SwapTriangles(Triangle triangleToSwap, int triangleIndex, const Vec2& point, std::vector<Triangle>& listToCheck)
+{
+	// Find the adjacent triangle containing our point
+	TriangleAndIndex adjacentTriangle = FindAdjacentTriangle(listToCheck, triangleToSwap, point);
+
+	// Move on if no adjacent triangle is found
+	if (adjacentTriangle.index == -1) { return; }
+
+	Vec2 connectPoint = Vec2();
+	// Find the point to connect our point with
+	for (Vec2 p : adjacentTriangle.triangle.mPoints)
+	{
+		for (size_t m = 0; m < 3; m++)
+		{
+			if (!Vector2IsEqual(p, triangleToSwap.mPoints[m]))
+			{
+				connectPoint = triangleToSwap.mPoints[m];
+				break;
+			}
+		}
+	}
+
+	Vec2 adjPoints[2];
+	int index = 0;
+	// Remove the point we are checking so that we aren't including it twice when we recreate the triangles below
+	for (size_t j = 0; j < 3; j++)
+	{
+		if (!Vector2IsEqual(adjacentTriangle.triangle.mPoints[j], point))
+		{
+			adjPoints[index] = adjacentTriangle.triangle.mPoints[j];
+			index++;
+		}
+	}
+
+	// Remove the triangles from the stack
+	// Ensure we remove the higher value first as to not ruin the indices
+	if (triangleIndex > adjacentTriangle.index)
+	{
+		listToCheck.erase(listToCheck.begin() + triangleIndex);
+		listToCheck.erase(listToCheck.begin() + adjacentTriangle.index);
+	}
+	else
+	{
+		listToCheck.erase(listToCheck.begin() + adjacentTriangle.index);
+		listToCheck.erase(listToCheck.begin() + triangleIndex);
+	}
+
+	// Add the new triangles to the stack, with the diagonal swapped
+	Triangle triangle1 = CreateClockwiseTriangle(std::vector<Vec2>{ point, connectPoint, adjPoints[0]});
+	Triangle triangle2 = CreateClockwiseTriangle(std::vector<Vec2>{ point, connectPoint, adjPoints[1]});
+
+	if (!IsDuplicateTriangle(triangle1, listToCheck) && !IsTriangleCollinear(triangle1))
+	{
+		listToCheck.push_back(triangle1);
+	}
+
+	if (!IsDuplicateTriangle(triangle2, listToCheck) && !IsTriangleCollinear(triangle2))
+	{
+		listToCheck.push_back(triangle2);
+	}
+}
+
+TriangleAndIndex FindAdjacentTriangle(const std::vector<Triangle>& triangleStack, Triangle& triangle, const Vec2& pointToCheck)
+{
+	for (int i = 0; i < triangleStack.size(); i++)
+	{
+		// Skip if the triangle we are checking is the same as the triangle we want to swap
+		if (IsSameTriangle(triangle, triangleStack[i])) { continue; }
+
+		// Swaps with concave quadrilaterals do not work
+		if (!IsConvexQuadrilateral(triangleStack[i], triangle)) { continue; }
+
+
+		// Find the triangle that contains the two common points shared by the adjacent triangle and the point we are checking
+		if (std::find(std::begin(triangleStack[i].mPoints), std::end(triangleStack[i].mPoints), triangle.mPoints[0]) != std::end(triangleStack[i].mPoints) && std::find(	std::begin(triangleStack[i].mPoints),std::end(triangleStack[i].mPoints), triangle.mPoints[1]) != std::end(triangleStack[i].mPoints) ||
+			std::find(std::begin(triangleStack[i].mPoints), std::end(triangleStack[i].mPoints), triangle.mPoints[0]) != std::end(triangleStack[i].mPoints) && std::find(	std::begin(triangleStack[i].mPoints),std::end(triangleStack[i].mPoints), triangle.mPoints[2]) != std::end(triangleStack[i].mPoints) ||
+			std::find(std::begin(triangleStack[i].mPoints), std::end(triangleStack[i].mPoints), triangle.mPoints[1]) != std::end(triangleStack[i].mPoints) && std::find(	std::begin(triangleStack[i].mPoints),std::end(triangleStack[i].mPoints), triangle.mPoints[2]) != std::end(triangleStack[i].mPoints))
+		{
+			// Make sure we are returning the triangle that contains the point
+			if (std::find(std::begin(triangleStack[i].mPoints), std::end(triangleStack[i].mPoints), pointToCheck) != std::end(triangleStack[i].mPoints))
+			{
+				// Return the found triangle
+				return TriangleAndIndex{ i, triangleStack[i] };
+			}
+		}
+	}
+
+	// Return empty struct if nothing found
+	return TriangleAndIndex{ -1, Triangle{} };
+}
+
+bool IsTriangleCollinear(const Triangle& triangleToCheck)
+{
+	Vec2 ab = triangleToCheck.mPoints[1] - triangleToCheck.mPoints[0];
+	Vec2 ac = triangleToCheck.mPoints[2] - triangleToCheck.mPoints[0];
+
+	return PseudoCross(ab, ac) == 0;
+}
+
+bool IsDuplicateTriangle(const Triangle& triangleToCheck, const std::vector<Triangle>& listToCheck)
+{
+	for (Triangle triangle : listToCheck)
+	{
+		if (std::find(std::begin(triangle.mPoints), std::end(triangle.mPoints), triangleToCheck.mPoints[0]) != std::end(triangle.mPoints) &&
+			std::find(std::begin(triangle.mPoints), std::end(triangle.mPoints), triangleToCheck.mPoints[1]) != std::end(triangle.mPoints) &&
+			std::find(std::begin(triangle.mPoints), std::end(triangle.mPoints), triangleToCheck.mPoints[2]) != std::end(triangle.mPoints))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool IsSameTriangle(const Triangle& tri1, const Triangle& tri2)
+{
+	if (std::find(std::begin(tri1.mPoints), std::end(tri1.mPoints), tri2.mPoints[0]) != std::end(tri1.mPoints) &&
+		std::find(std::begin(tri1.mPoints), std::end(tri1.mPoints), tri2.mPoints[1]) != std::end(tri1.mPoints) &&
+		std::find(std::begin(tri1.mPoints), std::end(tri1.mPoints), tri2.mPoints[2]) != std::end(tri1.mPoints))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool IsConvexQuadrilateral(const Triangle& tri1, const Triangle& tri2)
+{
+	Vec2 quad[4];
+	for (int i = 0; i < 3; i++)
+	{
+		if (std::find(std::begin(tri2.mPoints), std::end(tri2.mPoints), tri1.mPoints[i]) == std::end(tri2.mPoints))
+		{
+			quad[0] = tri1.mPoints[i];
+			break;
+		}
+	}
+
+	quad[1] = tri2.mPoints[0];
+	quad[2] = tri2.mPoints[1];
+	quad[3] = tri2.mPoints[2];
+
+	Vec2 start = quad[0];
+	for (Vec2 p : quad)
+	{
+		// Assigns start to the point with the lowest y-value if their x-value is identical
+		if (p.x == start.x)
+		{
+			if (p.y < start.y) { start = p; }
+			continue;
+		}
+
+		if (p.x < start.x) { start = p; }
+	}
+
+	Vec2 next;
+	Vec2 previous = start;
+	std::vector<Vec2> list;
+	list.push_back(start);
+
+	for (int i = 0; i < 3; i++)
+	{
+		next = quad[0];
+		if (Vector2IsEqual(next, previous)) { next = quad[1]; }
+
+		for (int j = 0; j < 4; j++)
+		{
+			// We don't want to check the point we are already using
+			if (Vector2IsEqual(quad[j], next)) { continue; }
+			Vec2 ab = quad[j] - next;
+			Vec2 ac = next - previous;
+
+			float result = PseudoCross(ab, ac);
+
+			// If the result is positive, then the point falls outside the line, meaning 'next' will fall inside the convex hull
+			if (result > 0) { next = quad[j]; }
+		}
+		list.push_back(next);
+		previous = next;
+	}
+
+	float result1 = FindAngle(list[0], list[1], list[3]);
+	float result2 = FindAngle(list[1], list[2], list[0]);
+	float result3 = FindAngle(list[2], list[3], list[1]);
+	float result4 = FindAngle(list[3], list[0], list[2]);
+
+	if (result1 < 180 && result2 < 180 && result3 < 180 && result4 < 180)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+void ConstructAdjacentTriangles(Triangle& triangle, const std::vector<Triangle>& listOfTriangles)
+{
+	for (TriEdge e : triangle.mEdgeList)
+	{
+		e.mTriangles.push_back(&triangle);
+
+		for (Triangle t : listOfTriangles)
+		{
+			if (IsSameTriangle(t, triangle)) { continue; }
+
+			if (std::find(std::begin(t.mPoints), std::end(t.mPoints), e.mPoints[0]) != std::end(t.mPoints) &&
+				std::find(std::begin(t.mPoints), std::end(t.mPoints), e.mPoints[1]) != std::end(t.mPoints))
+			{
+				e.mTriangles.push_back(&t);
+				triangle.mAdjTris.push_back(&t);
+			}
+		}
+	}
+}

@@ -1,6 +1,7 @@
 #include "World.h"
 #include "Utility.h"
 #include "Grid.h"
+#include "Triangle.h"
 
 World::World()
 {
@@ -45,7 +46,7 @@ void World::Initialise()
 			{
 				continue;
 			}
-	
+
 			// Start defining the inner region
 			if (level.At(x, y) == TileType::EMPTY && !isInnerRegionDefined)
 			{
@@ -71,7 +72,9 @@ void World::Initialise()
 		}
 	}
 
-	// scale points and obstacles to fix the level size
+	mNavMesh->Build(level);
+
+	// scale points and obstacles to adjust the level size
 	for (Obstacle* ob : mObstacles)
 	{
 		std::vector<Vec2>& points = ob->GetPoints();
@@ -87,7 +90,13 @@ void World::Initialise()
 		v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
 	}
 
-	mNavMesh->Build();
+	for (Triangle& t : mNavMesh->GetTriangles())
+	{
+		for (Vec2& v : t.mPoints)
+		{
+			v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
+		}
+	}
 }
 
 void World::Update(float delta)
@@ -97,10 +106,6 @@ void World::Update(float delta)
 
 void World::Draw(LineRenderer* lines)
 {
-	for (Obstacle* ob : mObstacles)
-	{
-		ob->Draw(lines);
-	}
 
 	for (PathAgent* agent : mPathAgents)
 	{
@@ -110,6 +115,11 @@ void World::Draw(LineRenderer* lines)
 	if (mNavMesh != nullptr)
 	{
 		mNavMesh->Draw(lines);
+	}
+
+	for (Obstacle* ob : mObstacles)
+	{
+		ob->Draw(lines);
 	}
 }
 
@@ -126,14 +136,12 @@ std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid, TileType tileType)
 	Vec2 secDir = Vec2(0, -1);
 	Vec2 currentPos = startPos;
 	bool shouldSwitchDirection = false;
+	bool addFinalPoint = true;
 
 	// Start moving right
 	while (!Vector2IsEqual(currentPos + primDir, startPos))
 	{
-		if (returnPoints.size() == 3)
-		{
-			int i = 0;
-		}
+		addFinalPoint = true;
 
 		if (shouldSwitchDirection)
 		{
@@ -141,7 +149,7 @@ std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid, TileType tileType)
 			secDir = SwitchDirection(secIndex);
 			shouldSwitchDirection = false;
 
-			if (Vector2IsEqual(currentPos + primDir, startPos)) { break; }
+			//if (Vector2IsEqual(currentPos + primDir, startPos)) { break; }
 
 			// Handles any single tile obstacles
 			if (returnPoints[0] == returnPoints[returnPoints.size() - 1])
@@ -154,6 +162,7 @@ std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid, TileType tileType)
 			if (grid.At(currentPos.x + primDir.x, currentPos.y + primDir.y) == tileType)
 			{
 				currentPos += primDir;
+
 			}
 		}
 
@@ -161,6 +170,7 @@ std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid, TileType tileType)
 		{
 			// Move forward a tile
 			currentPos += primDir;
+			addFinalPoint = false;
 		}
 
 		// Hit a concave corner, turn clockwise
@@ -190,6 +200,20 @@ std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid, TileType tileType)
 			secIndex = (secIndex + 3) % 4;
 			shouldSwitchDirection = true;
 		}
+
+		if (Vector2IsEqual(currentPos + primDir, startPos) && grid.At((currentPos + primDir + secDir).x, (currentPos + primDir + secDir).y) == tileType)
+		{
+			primDir = SwitchDirection(primIndex);
+			secDir = SwitchDirection(secIndex);
+			shouldSwitchDirection = false;
+			currentPos += primDir;
+		}
+	}
+
+	if (addFinalPoint)
+	{
+		Vec2 pointToAdd = ((currentPos + secDir + primDir) + (currentPos + primDir + primDir)) * 0.5;
+		returnPoints.push_back(pointToAdd);
 	}
 
 	return returnPoints;

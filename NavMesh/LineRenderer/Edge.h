@@ -5,9 +5,9 @@
 
 struct Triangle;
 
-struct Edge
+struct TriEdge
 {
-	Vec2 mVerts[2];
+	Vec2 mPoints[2];
 	std::vector<Triangle*> mTriangles;
 };
 

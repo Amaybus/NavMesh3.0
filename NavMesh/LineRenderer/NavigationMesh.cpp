@@ -1,5 +1,8 @@
 #include "NavigationMesh.h"
 #include "Triangle.h"
+#include "DelauneyTriangulation.h"
+#include "Grid.h"
+#include "TextStream.h"
 
 NavigationMesh::NavigationMesh()
 {
@@ -13,6 +16,7 @@ void NavigationMesh::Draw(LineRenderer* lines)
 		lines->AddPointToLine(mPoints[i], Colour::BLUE);
 	}
 	lines->FinishLineLoop();
+
 	for (Triangle t : mTriangles)
 	{
 		lines->AddPointToLine(t.mPoints[0], Colour::WHITE);
@@ -20,12 +24,17 @@ void NavigationMesh::Draw(LineRenderer* lines)
 		lines->AddPointToLine(t.mPoints[2], Colour::WHITE);
 		lines->FinishLineLoop();
 	}
+
+	for (Vec2 v : mPoints)
+	{
+		TextStream output(lines, Vec2(v.x + 10, v.y + 10), 10.0f, Colour::RED);
+		output << v.x << ", " << v.y;
+	}
 }
 
-void NavigationMesh::Build()
+void NavigationMesh::Build(Grid& grid)
 {
-	// Trianglulate
-	// CDT
+	mTriangles = DelauneyTriangulate(mPoints, grid);
 }
 
 void NavigationMesh::AddPointList(std::vector<Vec2> pointList)

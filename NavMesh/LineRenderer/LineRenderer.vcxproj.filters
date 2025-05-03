@@ -80,6 +80,9 @@
     <ClCompile Include="Utility.cpp">
       <Filter>Game</Filter>
     </ClCompile>
+    <ClCompile Include="DelauneyTriangulation.cpp">
+      <Filter>Game\Mesh Generation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GLFWCallbacks.h">
@@ -192,6 +195,9 @@
     </ClInclude>
     <ClInclude Include="Utility.h">
       <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="DelauneyTriangulation.h">
+      <Filter>Game\Mesh Generation</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

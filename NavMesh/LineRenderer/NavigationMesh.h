@@ -4,6 +4,7 @@
 #include <vector>
 #include "LineRenderer.h"
 
+class Grid;
 struct Triangle;
 
 class NavigationMesh
@@ -20,7 +21,7 @@ public:
 	NavigationMesh& operator=(const NavigationMesh& other) = default;
 
 	void Draw(LineRenderer* lines);
-	void Build();
+	void Build(Grid& grid);
 
 	std::vector<Vec2>& GetPoints() { return mPoints; }
 	std::vector<Triangle>& GetTriangles() { return mTriangles; }
