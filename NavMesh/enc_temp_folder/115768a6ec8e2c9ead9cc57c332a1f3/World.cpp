@@ -52,8 +52,8 @@ void World::Initialise()
 				std::vector<Vec2> navPoints = LineTrace(Vec2(x, y), level, TileType::EMPTY);
 				mNavMesh->AddPointList(navPoints);
 
-				isInnerRegionDefined = true;
-				continue;
+isInnerRegionDefined = true;
+continue;
 			}
 
 			// Define obstacle regions

@@ -29,6 +29,7 @@ public:
 	Vec2& operator-=(Vec2 v);
 	Vec2& operator*=(float s);
 	Vec2& operator/=(float s);
+	bool operator==(const Vec2& rhs) const { return x == rhs.x && y == rhs.y; }
 };
 
 Vec2 operator+(Vec2 a, Vec2 b);
