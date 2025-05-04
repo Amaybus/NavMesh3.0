@@ -72,7 +72,7 @@ void World::Initialise()
 		}
 	}
 
-	mNavMesh->Build(level);
+	mNavMesh->Build(mObstacles);
 
 	// scale points and obstacles to adjust the level size
 	for (Obstacle* ob : mObstacles)
@@ -80,16 +80,15 @@ void World::Initialise()
 		std::vector<Vec2>& points = ob->GetPoints();
 		for (Vec2& v : points)
 		{
-			//v = Vec2(v.x, -(v.y)) * level.GetCellSize();
 			v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
 		}
 	}
-
+	
 	for (Vec2& v : mNavMesh->GetPoints())
 	{
 		v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
 	}
-
+	
 	for (Triangle& t : mNavMesh->GetTriangles())
 	{
 		for (Vec2& v : t.mPoints)
@@ -107,6 +106,10 @@ void World::Update(float delta)
 void World::Draw(LineRenderer* lines)
 {
 
+	lines->DrawCircle(Vec2{ -100000,-100000 }, 500, Colour::GREEN);
+	lines->DrawCircle(Vec2{ 0,100000 }, 500, Colour::BLUE);
+	lines->DrawCircle(Vec2{ 100000,-100000 }, 500, Colour::MAGENTA);
+
 	for (PathAgent* agent : mPathAgents)
 	{
 		agent->Draw(lines);
@@ -117,10 +120,10 @@ void World::Draw(LineRenderer* lines)
 		mNavMesh->Draw(lines);
 	}
 
-	for (Obstacle* ob : mObstacles)
-	{
-		ob->Draw(lines);
-	}
+	//for (Obstacle* ob : mObstacles)
+	//{
+	//	ob->Draw(lines);
+	//}
 }
 
 std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid, TileType tileType)

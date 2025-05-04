@@ -1,7 +1,7 @@
 #include "NavigationMesh.h"
 #include "Triangle.h"
 #include "DelauneyTriangulation.h"
-#include "Grid.h"
+#include "Obstacle.h"
 #include "TextStream.h"
 
 NavigationMesh::NavigationMesh()
@@ -12,29 +12,34 @@ void NavigationMesh::Draw(LineRenderer* lines)
 {
 	for (int i = 0; i < mPoints.size(); i++)
 	{
-		lines->DrawCircle(mPoints[i], 100, Colour::GREEN);
-		lines->AddPointToLine(mPoints[i], Colour::BLUE);
+		lines->DrawCircle(mPoints[i], 1, Colour::GREEN);
+		//lines->AddPointToLine(mPoints[i], Colour::BLUE);
 	}
-	lines->FinishLineLoop();
-
+	//lines->FinishLineLoop();
+	int index = 0;
 	for (Triangle t : mTriangles)
 	{
 		lines->AddPointToLine(t.mPoints[0], Colour::WHITE);
 		lines->AddPointToLine(t.mPoints[1], Colour::WHITE);
 		lines->AddPointToLine(t.mPoints[2], Colour::WHITE);
 		lines->FinishLineLoop();
+
+		Vec2 result = t.mPoints[0] + t.mPoints[1] + t.mPoints[2];
+		TextStream output(lines, Vec2(result.x / 3, result.y / 3), 0.5f, Colour::YELLOW);
+		output << index;
+		index++;
 	}
 
 	for (Vec2 v : mPoints)
 	{
-		TextStream output(lines, Vec2(v.x + 10, v.y + 10), 10.0f, Colour::RED);
+		TextStream output(lines, Vec2(v.x +1, v.y + 1), 0.1f, Colour::RED);
 		output << v.x << ", " << v.y;
 	}
 }
 
-void NavigationMesh::Build(Grid& grid)
+void NavigationMesh::Build(std::vector<Obstacle*>& obstacles)
 {
-	mTriangles = DelauneyTriangulate(mPoints, grid);
+	mTriangles = DelauneyTriangulate(mPoints, obstacles);
 }
 
 void NavigationMesh::AddPointList(std::vector<Vec2> pointList)
