@@ -1,6 +1,6 @@
 #include "NavigationMesh.h"
 #include "Triangle.h"
-#include "DelauneyTriangulation.h"
+#include "DelaunayTriangulation.h"
 #include "Obstacle.h"
 #include "TextStream.h"
 
@@ -25,7 +25,7 @@ void NavigationMesh::Draw(LineRenderer* lines)
 		lines->FinishLineLoop();
 
 		Vec2 result = t.mPoints[0] + t.mPoints[1] + t.mPoints[2];
-		TextStream output(lines, Vec2(result.x / 3, result.y / 3), 0.5f, Colour::YELLOW);
+		TextStream output(lines, Vec2(result.x / 3, result.y / 3), 10.0f, Colour::YELLOW);
 		output << index;
 		index++;
 	}
@@ -39,7 +39,7 @@ void NavigationMesh::Draw(LineRenderer* lines)
 
 void NavigationMesh::Build(std::vector<Obstacle*>& obstacles)
 {
-	mTriangles = DelauneyTriangulate(mPoints, obstacles);
+	mTriangles = DelaunayTriangulate(mPoints, obstacles);
 }
 
 void NavigationMesh::AddPointList(std::vector<Vec2> pointList)

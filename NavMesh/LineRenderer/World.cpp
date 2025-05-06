@@ -105,11 +105,6 @@ void World::Update(float delta)
 
 void World::Draw(LineRenderer* lines)
 {
-
-	lines->DrawCircle(Vec2{ -100000,-100000 }, 500, Colour::GREEN);
-	lines->DrawCircle(Vec2{ 0,100000 }, 500, Colour::BLUE);
-	lines->DrawCircle(Vec2{ 100000,-100000 }, 500, Colour::MAGENTA);
-
 	for (PathAgent* agent : mPathAgents)
 	{
 		agent->Draw(lines);
@@ -120,10 +115,10 @@ void World::Draw(LineRenderer* lines)
 		mNavMesh->Draw(lines);
 	}
 
-	//for (Obstacle* ob : mObstacles)
-	//{
-	//	ob->Draw(lines);
-	//}
+	for (Obstacle* ob : mObstacles)
+	{
+		ob->Draw(lines);
+	}
 }
 
 std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid, TileType tileType)
@@ -165,7 +160,6 @@ std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid, TileType tileType)
 			if (grid.At(currentPos.x + primDir.x, currentPos.y + primDir.y) == tileType)
 			{
 				currentPos += primDir;
-
 			}
 		}
 

@@ -1,12 +1,12 @@
 
-#include "DelauneyTriangulation.h"
+#include "DelaunayTriangulation.h"
 #include "Triangle.h"
 #include "Utility.h"
 #include "Grid.h"
 #include "Edge.h"
 #include "Vec2.h"
 
-std::vector<Triangle> DelauneyTriangulate(std::vector<Vec2>& points, const std::vector<Obstacle*>& obstacles)
+std::vector<Triangle> DelaunayTriangulate(std::vector<Vec2>& points, const std::vector<Obstacle*>& obstacles)
 {
 	for (Obstacle* ob : obstacles)
 	{
@@ -16,20 +16,20 @@ std::vector<Triangle> DelauneyTriangulate(std::vector<Vec2>& points, const std::
 		}
 	}
 
-
 	// List of triangles we are expanding when a new triangle is created, to check for the delaunay-ness of them
 	std::vector<Triangle> triangleStack;
 
 	// Create super triangle
 	Vec2 superTriangle[3];
-	superTriangle[0] = (Vec2{ -10000,-10000 });
-	superTriangle[1] = (Vec2{ 0,10000 });
-	superTriangle[2] = (Vec2{ 10000,-10000 });
+	superTriangle[0] = (Vec2{ -1000,-1000 });
+	superTriangle[1] = (Vec2{ 0,1000 });
+	superTriangle[2] = (Vec2{ 1000,-1000 });
 	triangleStack.push_back(CreateClockwiseTriangle(superTriangle));
 
 	// Loop through each point
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < points.size(); i++)
 	{
+
 		int index = -1;
 		// Find triangle that encloses the point we are checking
 		for (int j = 0; j < triangleStack.size(); j++)
@@ -41,14 +41,6 @@ std::vector<Triangle> DelauneyTriangulate(std::vector<Vec2>& points, const std::
 				break;
 			}
 		}
-
-		//if (index == -1)
-		//{
-		//	points.push_back(points[i]);
-		//	points.erase(points.begin() + i);
-		//	i--;
-		//	continue;
-		//}
 
 		// Create new triangles with the added point to the vertices of the triangle which it falls into
 		std::vector<Triangle> potentialTriangles;
@@ -115,10 +107,10 @@ std::vector<Triangle> DelauneyTriangulate(std::vector<Vec2>& points, const std::
 	}
 
 	AssignEdgesAndAdjTris(returnList);
-	return returnList;
+	return ConstrainedDelaunayTriangulation(returnList, obstacles);
 }
 
-std::vector<Triangle> ConstrainedDelauneyTriangulation(std::vector<Triangle>& listOfTriangles, const std::vector<Obstacle*>& obstacles)
+std::vector<Triangle> ConstrainedDelaunayTriangulation(std::vector<Triangle>& listOfTriangles, const std::vector<Obstacle*>& obstacles)
 {
 	// Construct edges for all the obstacles
 	for (Obstacle* ob : obstacles)
@@ -137,6 +129,7 @@ std::vector<Triangle> ConstrainedDelauneyTriangulation(std::vector<Triangle>& li
 	}
 
 	HandleOverlappingEdges(listOfTriangles);
+	RemoveTrianglesFromObstacles(obstacles);
 	return listOfTriangles;
 }
 
@@ -145,8 +138,8 @@ void AssignEdgesAndAdjTris(std::vector<Triangle>& listOfTriangles)
 	for (Triangle& t : listOfTriangles)
 	{
 		ConstructTriangleEdges(t);
-		ConstructAdjacentTriangles(t, listOfTriangles);
 		AssignTrianglesToEdges(t, listOfTriangles);
+		ConstructAdjacentTriangles(t, listOfTriangles);
 	}
 }
 
@@ -183,51 +176,6 @@ Triangle CreateClockwiseTriangle(std::vector<Vec2> points)
 
 bool PointInTriangle(const Vec2& point, const Vec2& a, const Vec2& b, const Vec2& c)
 {
-	//int count = 0;
-	//
-	//std::vector<TriEdge> edges;
-	//Vec2 endPoint = Vec2(point.x + 1000000, point.y);
-	//
-	//TriEdge edge1;
-	//edge1.mPoints[0] = a;
-	//edge1.mPoints[1] = b;
-	//edges.push_back(edge1);
-	//
-	//TriEdge edge2;
-	//edge2.mPoints[0] = b;
-	//edge2.mPoints[1] = c;
-	//edges.push_back(edge2);
-	//
-	//TriEdge edge3;
-	//edge3.mPoints[0] = c;
-	//edge3.mPoints[1] = a;
-	//edges.push_back(edge3);
-	//
-	//for (TriEdge e : edges)
-	//{
-	//	float result1 = PseudoCross((endPoint - point), (e.mPoints[0] - point));
-	//	float result2 = PseudoCross((endPoint - point), (e.mPoints[1] - point));
-	//
-	//	float result3 = PseudoCross((e.mPoints[1] - e.mPoints[0]), (point - e.mPoints[0]));
-	//	float result4 = PseudoCross((e.mPoints[1] - e.mPoints[0]), (endPoint - e.mPoints[0]));
-	//
-	//
-	//	if (result1 * result2 < 0 && result3 * result4 < 0)
-	//	{
-	//		count++;
-	//	}
-	//
-	//}
-	//
-	//if (count % 2 > 0)
-	//{
-	//	return true;
-	//}
-	//return false;
-
-
-
-
 	// Get vector for each line in triangle
 	Vec2 ab = Vec2{ b.x - a.x, b.y - a.y };
 	Vec2 bc = Vec2{ c.x - b.x, c.y - b.y };
@@ -401,17 +349,27 @@ void SwapTriangles(Triangle triangleToSwap, int triangleIndex, const Vec2& point
 
 	Vec2 connectPoint = Vec2();
 	// Find the point to connect our point with
-	for (Vec2 p : adjacentTriangle.triangle.mPoints)
+	//for (Vec2 p : adjacentTriangle.triangle.mPoints)
+	//{
+	//	for (size_t m = 0; m < 3; m++)
+	//	{
+	//		if (!Vector2IsEqual(p, triangleToSwap.mPoints[m]))
+	//		{
+	//			connectPoint = triangleToSwap.mPoints[m];
+	//			break;
+	//		}
+	//	}
+	//}
+
+	for (Vec2 p : triangleToSwap.mPoints)
 	{
-		for (size_t m = 0; m < 3; m++)
+		if (std::find(std::begin(adjacentTriangle.triangle.mPoints), std::end(adjacentTriangle.triangle.mPoints), p) == std::end(adjacentTriangle.triangle.mPoints))
 		{
-			if (!Vector2IsEqual(p, triangleToSwap.mPoints[m]))
-			{
-				connectPoint = triangleToSwap.mPoints[m];
-				break;
-			}
+			connectPoint = p;
+			break;
 		}
 	}
+
 
 	Vec2 adjPoints[2];
 	int index = 0;
@@ -604,11 +562,13 @@ void ConstructAdjacentTriangles(Triangle& triangle, const std::vector<Triangle>&
 	}
 }
 
-void AssignTrianglesToEdges(Triangle& triangle, const std::vector<Triangle>& listOfTriangles)
+void AssignTrianglesToEdges(Triangle& triangle, std::vector<Triangle>& listOfTriangles)
 {
 	for (TriEdge& edge : triangle.mEdgeList)
 	{
-		for (Triangle t : listOfTriangles)
+		edge.mTriangles.push_back(&triangle);
+
+		for (Triangle& t : listOfTriangles)
 		{
 			if (IsSameTriangle(t, triangle)) { continue; }
 
@@ -789,4 +749,32 @@ void HandleOverlappingEdges(std::vector<Triangle>& listOfTriangles)
 			}
 		}
 	}
+}
+
+void RemoveTrianglesFromObstacles(std::vector<Obstacle*> obstacles)
+{
+	//for (Obstacle obstacle : obstacles)
+	//{
+	//	std::vector<int> triIndexRemoval;
+	//	std::vector<std::vector<Vec2>>& triList = GetTriangleList();
+	//	std::vector<Vec2> conHull = obstacle.GetConvexHull();
+	//	for (int i = 0; i < triList.size(); i++)
+	//	{
+	//		if (std::find(conHull.begin(), conHull.end(), triList[i][0]) != conHull.end())
+	//		{
+	//			if (std::find(conHull.begin(), conHull.end(), triList[i][1]) != conHull.end())
+	//			{
+	//				if (std::find(conHull.begin(), conHull.end(), triList[i][2]) != conHull.end())
+	//				{
+	//					triIndexRemoval.push_back(i);
+	//				}
+	//			}
+	//		}
+	//	}
+	//
+	//	for (int i = (int)triIndexRemoval.size() - 1; i >= 0; i--)
+	//	{
+	//		triList.erase(triList.begin() + triIndexRemoval[i]);
+	//	}
+	//}
 }

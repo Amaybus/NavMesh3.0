@@ -23,10 +23,10 @@ struct TriangleAndIndex
 
 
 // If we have a random set of points
-std::vector<Triangle> DelauneyTriangulate(std::vector<Vec2>& points, const std::vector<Obstacle*>& obstacles);
+std::vector<Triangle> DelaunayTriangulate(std::vector<Vec2>& points, const std::vector<Obstacle*>& obstacles);
 
 // If we want constraints
-std::vector<Triangle> ConstrainedDelauneyTriangulation(std::vector<Triangle>& listOfTriangles, const std::vector<Obstacle*>& obstacles);
+std::vector<Triangle> ConstrainedDelaunayTriangulation(std::vector<Triangle>& listOfTriangles, const std::vector<Obstacle*>& obstacles);
 
 void AssignEdgesAndAdjTris(std::vector<Triangle>& listOfTriangles);
 
@@ -70,7 +70,7 @@ bool IsConvexQuadrilateral(const Triangle& tri1, const Triangle& tri2);
 // Assigns the adjacent triangles to this triangle
 void ConstructAdjacentTriangles(Triangle& triangle, const std::vector<Triangle>& listOfTriangles);
 
-void AssignTrianglesToEdges(Triangle& triangle, const std::vector<Triangle>& listOfTriangles);
+void AssignTrianglesToEdges(Triangle& triangle, std::vector<Triangle>& listOfTriangles);
 
 // Finds all triangle edges that overlap with a constraint edge
 std::vector<TriEdge> FindOverlapsWithConstraints(std::vector<TriEdge> constraintEdges, std::vector<Triangle>& listOfTriangles);
@@ -85,3 +85,5 @@ void HandleOverlapsWithConstraints(std::vector<TriEdge>& edges, std::vector<TriE
 void SwapEdge(TriEdge& edge, std::vector<Triangle>& listOfTriangles);
 
 void HandleOverlappingEdges(std::vector<Triangle>& listOfTriangles);
+
+void RemoveTrianglesFromObstacles(std::vector<Obstacle*> obstacles);
