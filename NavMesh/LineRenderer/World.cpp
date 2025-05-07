@@ -2,6 +2,7 @@
 #include "Utility.h"
 #include "Grid.h"
 #include "Triangle.h"
+#include "ImGui.h"
 
 World::World()
 {
@@ -25,6 +26,11 @@ World::~World()
 	}
 }
 
+float GetRandomFloat(float min, float max)
+{
+	return (rand() / (float)RAND_MAX) * (max - min) + min;
+}
+
 void World::Initialise()
 {
 	// Create level from file
@@ -34,77 +40,92 @@ void World::Initialise()
 	// Create nav mesh with dimensions of the file
 	NavigationMesh* navMesh = new NavigationMesh();
 	mNavMesh = navMesh;
-
-	// Init the level
-	bool isInnerRegionDefined = false;
-	for (int y = 0; y < level.GetHeight(); y++)
+	for (int i = 0; i < 100; i++)
 	{
-		for (int x = 0; x < level.GetWidth(); x++)
-		{
-			// Ignore outside tiles and empty tiles if the inside has been traced already
-			if (level.At(x, y) == TileType::OUTSIDE || (level.At(x, y) == TileType::EMPTY && isInnerRegionDefined))
-			{
-				continue;
-			}
-
-			// Start defining the inner region
-			if (level.At(x, y) == TileType::EMPTY && !isInnerRegionDefined)
-			{
-				std::vector<Vec2> navPoints = LineTrace(Vec2(x, y), level, TileType::EMPTY);
-				mNavMesh->AddPointList(navPoints);
-
-				isInnerRegionDefined = true;
-				continue;
-			}
-
-			// Define obstacle regions
-			if (level.At(x, y) == TileType::OBSTACLE)
-			{
-				// Skip any tiles which are already in an obstacle
-				if (IsPointInObstacle(Vec2(x, y), mObstacles, level.GetWidth())) { continue; }
-
-				std::vector<Vec2> obPoints = LineTrace(Vec2(x, y), level, TileType::OBSTACLE);
-				Obstacle* ob = new Obstacle(obPoints);
-				mObstacles.push_back(ob);
-
-				continue;
-			}
-		}
+		mNavMesh->AddPoint(Vec2(GetRandomFloat(0, 100), GetRandomFloat(0, 100)));
 	}
+	// Init the level
+	//bool isInnerRegionDefined = false;
+	//for (int y = 0; y < level.GetHeight(); y++)
+	//{
+	//	for (int x = 0; x < level.GetWidth(); x++)
+	//	{
+	//		// Ignore outside tiles and empty tiles if the inside has been traced already
+	//		if (level.At(x, y) == TileType::OUTSIDE || (level.At(x, y) == TileType::EMPTY && isInnerRegionDefined))
+	//		{
+	//			continue;
+	//		}
+	//
+	//		// Start defining the inner region
+	//		if (level.At(x, y) == TileType::EMPTY && !isInnerRegionDefined)
+	//		{
+	//			std::vector<Vec2> navPoints = LineTrace(Vec2(x, y), level, TileType::EMPTY);
+	//			mNavMesh->AddPointList(navPoints);
+	//
+	//			isInnerRegionDefined = true;
+	//			continue;
+	//		}
+	//
+	//		// Define obstacle regions
+	//		if (level.At(x, y) == TileType::OBSTACLE)
+	//		{
+	//			// Skip any tiles which are already in an obstacle
+	//			if (IsPointInObstacle(Vec2(x, y), mObstacles, level.GetWidth())) { continue; }
+	//
+	//			std::vector<Vec2> obPoints = LineTrace(Vec2(x, y), level, TileType::OBSTACLE);
+	//			Obstacle* ob = new Obstacle(obPoints);
+	//			mObstacles.push_back(ob);
+	//
+	//			continue;
+	//		}
+	//	}
+	//}
 
 	mNavMesh->Build(mObstacles);
 
 	// scale points and obstacles to adjust the level size
-	for (Obstacle* ob : mObstacles)
-	{
-		std::vector<Vec2>& points = ob->GetPoints();
-		for (Vec2& v : points)
-		{
-			v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
-		}
-	}
-	
-	for (Vec2& v : mNavMesh->GetPoints())
-	{
-		v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
-	}
-	
-	for (Triangle& t : mNavMesh->GetTriangles())
-	{
-		for (Vec2& v : t.mPoints)
-		{
-			v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
-		}
-	}
+	//for (Obstacle* ob : mObstacles)
+	//{
+	//	std::vector<Vec2>& points = ob->GetPoints();
+	//	for (Vec2& v : points)
+	//	{
+	//		v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
+	//	}
+	//}
+	//
+	//for (Vec2& v : mNavMesh->GetPoints())
+	//{
+	//	v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
+	//}
+	//
+	//for (Triangle* t : mNavMesh->GetTriangles())
+	//{
+	//	for (Vec2& v : t->mPoints)
+	//	{
+	//		v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
+	//	}
+	//}
 }
 
 void World::Update(float delta)
 {
 	Draw(lines);
+
+	if (ImGui::Begin("Tools"))
+	{
+		if (ImGui::CollapsingHeader("CIRCUMCIRLCE"))
+		{
+			ImGui::SliderInt("Triangle Index", &mTriangleIndex, 0, (int)mNavMesh->GetNumberOfTriangles() - 1);
+		}
+	}
+	ImGui::End();
 }
 
 void World::Draw(LineRenderer* lines)
 {
+
+	DrawCircumcircles(lines);
+
 	for (PathAgent* agent : mPathAgents)
 	{
 		agent->Draw(lines);
@@ -232,5 +253,39 @@ Vec2 World::SwitchDirection(int moveDirIdex)
 	case 3:
 		return Vec2(0, -1);
 	}
+}
+
+void World::DrawCircumcircles(LineRenderer* lines)
+{
+		Triangle* tri = mNavMesh->GetTriangleAtIndex(mTriangleIndex);
+	
+		Vec2 a = tri->mPoints[0];
+		Vec2 b = tri->mPoints[1];
+		Vec2 c = tri->mPoints[2];
+
+		float d = 2 * ((a.x * (b.y - c.y)) + (b.x * (c.y - a.y)) + (c.x * (a.y - b.y)));
+		float x = ((((a.x * a.x) + (a.y * a.y)) * (b.y - c.y)) + ((b.x * b.x + b.y * b.y) * (c.y - a.y)) + (((c.x * c.x) + (c.y * c.y)) * (a.y - b.y))) / d;
+		float y = (((a.x * a.x + a.y * a.y) * (c.x - b.x)) + ((b.x * b.x + b.y * b.y) * (a.x - c.x)) + ((c.x * c.x + c.y * c.y) * (b.x - a.x))) / d;
+
+		Vec2 circumcenter = Vec2{ x,y };
+
+		// Get lengths of each side
+		float ab = (tri->mPoints[1] - tri->mPoints[0]).GetMagnitude();
+		float bc = (tri->mPoints[2] - tri->mPoints[1]).GetMagnitude();
+		float ca = (tri->mPoints[0] - tri->mPoints[2]).GetMagnitude();
+
+		// Triangles half perimeter
+		float s = (ab + bc + ca) * 0.5f;
+
+		// Find area using Heron's formula
+		float area = (float)sqrt((s * (s - ab) * (s - bc) * (s - ca)));
+
+		// Find the radius of the circumcircle
+		float radius = (ab * bc * ca) / (4 * area);
+
+
+		lines->DrawCircle(circumcenter, radius, Colour::MAGENTA);
+
+	
 }
 

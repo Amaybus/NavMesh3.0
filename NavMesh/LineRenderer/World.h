@@ -40,5 +40,9 @@ public:
 	std::vector<Vec2> LineTrace(Vec2 startPos, Grid& grid, TileType tileType);
 	Vec2 SwitchDirection(int moveDirIdex);
 	std::vector<Obstacle*>& GetObstacles() { return mObstacles; }
+
+	void DrawCircumcircles(LineRenderer* lines);
+
+	int mTriangleIndex = 0;
 };
 
