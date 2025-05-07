@@ -125,3 +125,33 @@ std::vector<TriEdge> ConstructObstacleEdges(Obstacle* ob)
 	return returnEdges;
 }
 
+std::vector<Vec2> AddBufferToObstacles(std::vector<Obstacle*>& obstacles)
+{
+	std::vector<Vec2> returnPoints;
+	Vec2 next;
+	Vec2 previous;
+	for (int i = 0; i < obstacles.size(); i++)
+	{
+		std::vector<Vec2> points = obstacles[i]->GetPoints();
+		for (int j = 0; j < points.size(); j++)
+		{
+			if (j == 0) { previous = points[points.size() - 1]; }
+			else { previous = points[j - 1];}
+
+			if (j == points.size() - 1) { next = points[0]; }
+			else { next = points[j + 1];}
+
+			Vec2 direction = (points[j] - next).Normalise();
+			Vec2 direction2 = (points[j] - previous).Normalise();
+
+			Vec2 final = (direction + direction2) /2;
+
+			returnPoints.push_back(points[j] + final * 0.1);
+
+		}
+	}
+	
+
+	return returnPoints;
+}
+

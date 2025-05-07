@@ -46,8 +46,10 @@ std::vector<Triangle*> ResolveCollinearTriangles(const std::vector<Triangle*>& c
 // Creates and assigns the edges of a triangle
 void ConstructTriangleEdges(Triangle* triangle);
 
+void RestoreDelauneyness(std::vector<Triangle*>& listOfTriangles, std::vector<Vec2> points);
+
 // Test if points lie in the circumcircle of a triangle
-void CheckCircumcircle(Triangle* triangle, int triangleIndex, const Vec2& pointToCheck, std::vector<Triangle*>& listToCheck);
+bool CheckCircumcircle(Triangle* triangle, int triangleIndex, const Vec2& pointToCheck, std::vector<Triangle*>& listToCheck);
 
 // Used for when a point falls within the circumcircle of a triangle
 void SwapTriangles(Triangle* triangleToSwap, int triangleIndex, const Vec2& point, std::vector<Triangle*>& listToCheck);

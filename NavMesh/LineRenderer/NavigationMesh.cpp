@@ -33,8 +33,8 @@ void NavigationMesh::Draw(LineRenderer* lines)
 
 	for (Vec2 v : mPoints)
 	{
-		//TextStream output(lines, Vec2(v.x, v.y), 0.1f, Colour::RED);
-		//output << v.x << ", " << v.y;
+		TextStream output(lines, Vec2(v.x, v.y), 0.1f, Colour::RED);
+		output << v.x << ", " << v.y;
 	}
 }
 

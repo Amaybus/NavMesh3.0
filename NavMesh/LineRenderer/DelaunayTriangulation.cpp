@@ -82,14 +82,6 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 		}
 	}
 
-	for (int i = 0; i < points.size(); i++)
-	{
-		for (int j = 0; j < triangleStack.size(); j++)
-		{
-			CheckCircumcircle(triangleStack[j], j, points[i], triangleStack);
-		}
-	}
-
 	// After all points are added, remove all triangles connected with the super triangle vertices
 	std::vector<Triangle*> returnList;
 	for (int l = (int)triangleStack.size() - 1; l >= 0; l--)
@@ -106,8 +98,10 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 		}
 	}
 
-	//AssignEdgesAndAdjTris(returnList);
-	//return ConstrainedDelaunayTriangulation(returnList, obstacles);
+	RestoreDelauneyness(returnList, points);
+
+	AssignEdgesAndAdjTris(returnList);
+	return ConstrainedDelaunayTriangulation(returnList, obstacles);
 	return returnList;
 }
 
@@ -129,10 +123,9 @@ std::vector<Triangle*> ConstrainedDelaunayTriangulation(std::vector<Triangle*>& 
 		{
 			// Adjust the edges so the are no longer overlapping
 			HandleOverlapsWithConstraints(overlappingEdges, constraintEdgeList, listOfTriangles);
-		
+
 			overlappingEdges = FindOverlapsWithConstraints(constraintEdgeList, listOfTriangles);
 		}
-
 	}
 
 	HandleOverlappingEdges(listOfTriangles);
@@ -309,10 +302,34 @@ void ConstructTriangleEdges(Triangle* triangle)
 	}
 }
 
-void CheckCircumcircle(Triangle* triangle, int triangleIndex, const Vec2& pointToCheck, std::vector<Triangle*>& listToCheck)
+void RestoreDelauneyness(std::vector<Triangle*>& listOfTriangles, std::vector<Vec2> points)
+{
+	int safety = 0;
+	int successCount = 0;
+	int a = (listOfTriangles.size()) * (points.size());
+	
+	while (successCount < ((listOfTriangles.size()) * (points.size())))
+	{
+		safety++;
+		successCount = 0;
+		for (Vec2 p : points)
+		{
+			for (int i = 0; i < listOfTriangles.size(); i++)
+			{
+				if (CheckCircumcircle(listOfTriangles[i], i, p, listOfTriangles))
+				{
+					successCount++;
+				}
+			}
+		}
+		if (safety > 500) { return; }
+	}
+}
+
+bool CheckCircumcircle(Triangle* triangle, int triangleIndex, const Vec2& pointToCheck, std::vector<Triangle*>& listToCheck)
 {
 	// Don't check any triangles that contain the point already
-	if (std::find(std::begin(triangle->mPoints), std::end(triangle->mPoints), pointToCheck) != std::end(triangle->mPoints)) { return; }
+	if (std::find(std::begin(triangle->mPoints), std::end(triangle->mPoints), pointToCheck) != std::end(triangle->mPoints)) { return true; }
 
 	// https://stackoverflow.com/questions/56224824/how-do-i-find-the-circumcenter-of-the-triangle-using-python-without-external-lib
 	Vec2 a = triangle->mPoints[0];
@@ -340,10 +357,12 @@ void CheckCircumcircle(Triangle* triangle, int triangleIndex, const Vec2& pointT
 	float radius = (ab * bc * ca) / (4 * area);
 
 	float displacement = (pointToCheck - circumcenter).GetMagnitude();
-	if (displacement < radius - 0.1)
+	if (displacement <= radius)
 	{
 		SwapTriangles(triangle, triangleIndex, pointToCheck, listToCheck);
+		return false;
 	}
+	return true;
 }
 
 void SwapTriangles(Triangle* triangleToSwap, int triangleIndex, const Vec2& point, std::vector<Triangle*>& listToCheck)
@@ -663,6 +682,10 @@ void HandleOverlapsWithConstraints(std::vector<TriEdge>& edges, std::vector<TriE
 {
 	while (!edges.empty())
 	{
+		if (edges.size() == 4)
+		{
+			int a = 0;
+		}
 		AssignTrianglesToEdges(edges[0], listOfTriangles);
 		SwapEdge(edges[0], listOfTriangles);
 		edges.erase(edges.begin());
@@ -814,7 +837,7 @@ void RemoveTrianglesFromObstacles(std::vector<Obstacle*> obstacles, std::vector<
 						//if (IsPointInObstacle(triMidPoint, obstacles, 1000))
 						//{
 						triIndexRemoval.push_back(i);
-						//}
+
 					}
 				}
 			}
@@ -825,4 +848,30 @@ void RemoveTrianglesFromObstacles(std::vector<Obstacle*> obstacles, std::vector<
 			listOfTriangles.erase(listOfTriangles.begin() + triIndexRemoval[i]);
 		}
 	}
+
+
+
+
+
+	//for (Obstacle* obstacle : obstacles)
+	//{
+	//	std::vector<int> triIndexRemoval;
+	//	std::vector<Vec2>& conHull = obstacle->GetPoints();
+	//	for (int i = 0; i < listOfTriangles.size(); i++)
+	//	{
+	//		for (Vec2 p : listOfTriangles[i]->mPoints)
+	//		{
+	//			if (std::find(conHull.begin(), conHull.end(), p) != conHull.end())
+	//			{
+	//				triIndexRemoval.push_back(i);
+	//				break;
+	//			}
+	//		}
+	//	}
+	//
+	//	for (int i = (int)triIndexRemoval.size() - 1; i >= 0; i--)
+	//	{
+	//		listOfTriangles.erase(listOfTriangles.begin() + triIndexRemoval[i]);
+	//	}
+	//}
 }
