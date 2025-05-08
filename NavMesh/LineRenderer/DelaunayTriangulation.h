@@ -53,6 +53,7 @@ bool CheckCircumcircle(Triangle* triangle, int triangleIndex, const Vec2& pointT
 
 // Used for when a point falls within the circumcircle of a triangle
 void SwapTriangles(Triangle* triangleToSwap, int triangleIndex, const Vec2& point, std::vector<Triangle*>& listToCheck);
+void SwapTrianglesWithKnownAdjacent(Triangle* tri1, int tri1Index, Triangle* tri2, int tri2Index, std::vector<Triangle*>& listToCheck, const TriEdge& edge);
 
 // Gives us the triangle which contains two of the same points
 TriangleAndIndex FindAdjacentTriangle(const std::vector<Triangle*>& triangleStack, Triangle* triangle, const Vec2& pointToCheck);
@@ -93,3 +94,5 @@ void HandleOverlappingEdges(std::vector<Triangle*>& listOfTriangles);
 
 // Removes any triangles that are inside of the obstacles
 void RemoveTrianglesFromObstacles(std::vector<Obstacle*> obstacles, std::vector<Triangle*>& listOfTriangles);
+
+std::vector<int> FindSharedEdgeTriangles(const TriEdge& edge, const std::vector<Triangle*>& listOfTriangles);

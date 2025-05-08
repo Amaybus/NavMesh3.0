@@ -3,6 +3,7 @@
 #include "Grid.h"
 #include "Triangle.h"
 #include "ImGui.h"
+#include <algorithm>
 
 World::World()
 {
@@ -126,8 +127,6 @@ void World::Update(float delta)
 
 void World::Draw(LineRenderer* lines)
 {
-
-
 	for (PathAgent* agent : mPathAgents)
 	{
 		agent->Draw(lines);
@@ -144,7 +143,25 @@ void World::Draw(LineRenderer* lines)
 	}
 
 	DrawCircumcircles(lines);
-}
+
+	Triangle* tri = mNavMesh->GetTriangles()[18];
+	Vec2 normals[3];
+	normals[0] = (tri->mEdgeList[0].mPoints[0] - tri->mEdgeList[0].mPoints[1]).GetRotatedBy270().GetNormalised();
+	normals[1] = (tri->mEdgeList[1].mPoints[0] - tri->mEdgeList[1].mPoints[1]).GetRotatedBy270().GetNormalised();
+	normals[2] = (tri->mEdgeList[2].mPoints[0] - tri->mEdgeList[2].mPoints[1]).GetRotatedBy270().GetNormalised();
+
+	Vec2 edgeMidPoints[3];
+	edgeMidPoints[0] = (tri->mEdgeList[0].mPoints[0] + tri->mEdgeList[0].mPoints[1]) / 2;
+	edgeMidPoints[1] = (tri->mEdgeList[1].mPoints[0] + tri->mEdgeList[1].mPoints[1]) / 2;
+	edgeMidPoints[2] = (tri->mEdgeList[2].mPoints[0] + tri->mEdgeList[2].mPoints[1]) / 2;
+
+	lines->DrawCross(edgeMidPoints[0] - (normals[0] * 0.01),0.1f ,Colour::MAGENTA);
+	lines->DrawCross(edgeMidPoints[1] - (normals[1] * 0.01),0.1f ,Colour::ORANGE);
+	lines->DrawCross(edgeMidPoints[2] - (normals[2] * 0.01),0.1f ,Colour::BLUE);
+	lines->DrawLineWithArrow(edgeMidPoints[0] - (normals[0] * 0.01), edgeMidPoints[0] - (normals[0] * 0.01) * 1000, Colour::MAGENTA, 0.01);
+	lines->DrawLineWithArrow(edgeMidPoints[1] - (normals[1] * 0.01), edgeMidPoints[1] - (normals[1] * 0.01) * 1000, Colour::ORANGE, 0.01);
+	lines->DrawLineWithArrow(edgeMidPoints[2] - (normals[2] * 0.01), edgeMidPoints[2] - (normals[2] * 0.01) * 1000, Colour::BLUE, 0.01);
+}															
 
 std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid, TileType tileType)
 {
@@ -159,20 +176,15 @@ std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid, TileType tileType)
 	Vec2 secDir = Vec2(0, -1);
 	Vec2 currentPos = startPos;
 	bool shouldSwitchDirection = false;
-	bool addFinalPoint = true;
 
 	// Start moving right
 	while (!Vector2IsEqual(currentPos + primDir, startPos))
 	{
-		addFinalPoint = true;
-
 		if (shouldSwitchDirection)
 		{
 			primDir = SwitchDirection(primIndex);
 			secDir = SwitchDirection(secIndex);
 			shouldSwitchDirection = false;
-
-			//if (Vector2IsEqual(currentPos + primDir, startPos)) { break; }
 
 			// Handles any single tile obstacles
 			if (returnPoints[0] == returnPoints[returnPoints.size() - 1])
@@ -192,7 +204,6 @@ std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid, TileType tileType)
 		{
 			// Move forward a tile
 			currentPos += primDir;
-			addFinalPoint = false;
 		}
 
 		// Hit a concave corner, turn clockwise
@@ -232,12 +243,12 @@ std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid, TileType tileType)
 		}
 	}
 
-	if (addFinalPoint)
+	Vec2 pointToAdd = Vec2((currentPos + secDir + primDir) + (currentPos + primDir + primDir))*0.5;
+	if (!Vector2IsEqual(pointToAdd, returnPoints[0])) 
 	{
-		Vec2 pointToAdd = ((currentPos + secDir + primDir) + (currentPos + primDir + primDir)) * 0.5;
 		returnPoints.push_back(pointToAdd);
 	}
-
+	
 	return returnPoints;
 }
 
@@ -289,9 +300,9 @@ void World::DrawCircumcircles(LineRenderer* lines)
 
 
 		lines->DrawCircle(circumcenter, radius, Colour::MAGENTA);
-		lines->DrawCircle(a, 1, Colour::RED);
-		lines->DrawCircle(b, 1, Colour::RED);
-		lines->DrawCircle(c, 1, Colour::RED);
-	
+		lines->DrawCircle(a,0.1f, Colour::RED);
+		lines->DrawCircle(b,0.1f, Colour::RED);
+		lines->DrawCircle(c,0.1f, Colour::RED);
+							 
 }
 

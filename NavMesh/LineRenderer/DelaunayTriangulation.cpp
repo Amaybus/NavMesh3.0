@@ -102,33 +102,35 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 
 	AssignEdgesAndAdjTris(returnList);
 	return ConstrainedDelaunayTriangulation(returnList, obstacles);
-	return returnList;
 }
 
 std::vector<Triangle*> ConstrainedDelaunayTriangulation(std::vector<Triangle*>& listOfTriangles, const std::vector<Obstacle*>& obstacles)
 {
 	// Construct edges for all the obstacles
+	std::vector<TriEdge> constraintEdgeList;
 	for (Obstacle* ob : obstacles)
 	{
-		std::vector<TriEdge> constraintEdgeList;
 		for (TriEdge e : ConstructObstacleEdges(ob))
 		{
 			constraintEdgeList.push_back(e);
 		}
 
+		HandleOverlappingEdges(listOfTriangles);
+		//RemoveTrianglesFromObstacles(obstacles, listOfTriangles);
 		// Find all overlapping edges
 		std::vector<TriEdge> overlappingEdges = FindOverlapsWithConstraints(constraintEdgeList, listOfTriangles);
 
-		while (!overlappingEdges.empty())
-		{
-			// Adjust the edges so the are no longer overlapping
-			HandleOverlapsWithConstraints(overlappingEdges, constraintEdgeList, listOfTriangles);
-
-			overlappingEdges = FindOverlapsWithConstraints(constraintEdgeList, listOfTriangles);
-		}
+		// Adjust the edges so the are no longer overlapping
+		HandleOverlapsWithConstraints(overlappingEdges, constraintEdgeList, listOfTriangles);
 	}
 
 	HandleOverlappingEdges(listOfTriangles);
+	
+	for (Triangle* t : listOfTriangles)
+	{
+		ConstructTriangleEdges(t);
+	}
+
 	RemoveTrianglesFromObstacles(obstacles, listOfTriangles);
 	return listOfTriangles;
 }
@@ -307,7 +309,7 @@ void RestoreDelauneyness(std::vector<Triangle*>& listOfTriangles, std::vector<Ve
 	int safety = 0;
 	int successCount = 0;
 	int a = (listOfTriangles.size()) * (points.size());
-	
+
 	while (successCount < ((listOfTriangles.size()) * (points.size())))
 	{
 		safety++;
@@ -419,6 +421,57 @@ void SwapTriangles(Triangle* triangleToSwap, int triangleIndex, const Vec2& poin
 		listToCheck.push_back(triangle1);
 	}
 
+	if (!IsDuplicateTriangle(triangle2, listToCheck) && !IsTriangleCollinear(triangle2))
+	{
+		listToCheck.push_back(triangle2);
+	}
+}
+
+void SwapTrianglesWithKnownAdjacent(Triangle* tri1, int tri1Index, Triangle* tri2, int tri2Index, std::vector<Triangle*>& listToCheck, const TriEdge& edge)
+{
+	Vec2 point1;
+	Vec2 point2;
+
+	for (int i = 2; i >= 0; i--)
+	{
+		if (!Vector2IsEqual(tri1->mPoints[i], edge.mPoints[0]) && !Vector2IsEqual(tri1->mPoints[i], edge.mPoints[1]))
+		{
+			point1 = tri1->mPoints[i];
+			break;
+		}
+	}
+
+	for (int i = 2; i >= 0; i--)
+	{
+		if (!Vector2IsEqual(tri2->mPoints[i], edge.mPoints[0]) && !Vector2IsEqual(tri2->mPoints[i], edge.mPoints[1]))
+		{
+			point2 = tri2->mPoints[i];
+			break;
+		}
+	}
+
+	// Remove the triangles from the stack
+	// Ensure we remove the higher value first as to not ruin the indices
+	if (tri1Index > tri2Index)
+	{
+		listToCheck.erase(listToCheck.begin() + tri1Index);
+		listToCheck.erase(listToCheck.begin() + tri2Index);
+	}
+	else
+	{
+		listToCheck.erase(listToCheck.begin() + tri2Index);
+		listToCheck.erase(listToCheck.begin() + tri1Index);
+	}
+
+	// Add the new triangles to the stack, with the diagonal swapped
+	Triangle* triangle1 = CreateClockwiseTriangle(std::vector<Vec2>{ edge.mPoints[0], point1, point2});
+	Triangle* triangle2 = CreateClockwiseTriangle(std::vector<Vec2>{ edge.mPoints[1], point1, point2});
+
+	if (!IsDuplicateTriangle(triangle1, listToCheck) && !IsTriangleCollinear(triangle1))
+	{
+		listToCheck.push_back(triangle1);
+	}
+	
 	if (!IsDuplicateTriangle(triangle2, listToCheck) && !IsTriangleCollinear(triangle2))
 	{
 		listToCheck.push_back(triangle2);
@@ -600,13 +653,15 @@ void AssignTrianglesToEdges(TriEdge& edge, std::vector<Triangle*>& listOfTriangl
 {
 	edge.mTriangles.clear();
 
-	for (Triangle* t : listOfTriangles)
+	for (int i = 0; i < listOfTriangles.size(); i++)
 	{
+		Triangle* t = listOfTriangles[i];
 		if (std::find(std::begin(edge.mPoints), std::end(edge.mPoints), t->mPoints[0]) != std::end(edge.mPoints) && std::find(std::begin(edge.mPoints), std::end(edge.mPoints), t->mPoints[1]) != std::end(edge.mPoints) ||
 			std::find(std::begin(edge.mPoints), std::end(edge.mPoints), t->mPoints[0]) != std::end(edge.mPoints) && std::find(std::begin(edge.mPoints), std::end(edge.mPoints), t->mPoints[2]) != std::end(edge.mPoints) ||
 			std::find(std::begin(edge.mPoints), std::end(edge.mPoints), t->mPoints[1]) != std::end(edge.mPoints) && std::find(std::begin(edge.mPoints), std::end(edge.mPoints), t->mPoints[2]) != std::end(edge.mPoints))
 		{
 			edge.mTriangles.push_back(t);
+			edge.mTriIndex.push_back(i);
 
 			if (edge.mTriangles.size() == 2)
 			{
@@ -627,21 +682,18 @@ std::vector<TriEdge> FindOverlapsWithConstraints(std::vector<TriEdge> constraint
 		{
 			// Check if the points overlap with the edge
 			// Get the vector of the constraint edge
-			for (TriEdge tEdge : listOfTriangles[j]->mEdgeList)
+ 			for (TriEdge tEdge : listOfTriangles[j]->mEdgeList)
 			{
 				Vec2 edgePoint1 = tEdge.mPoints[0];
 				Vec2 edgePoint2 = tEdge.mPoints[1];
 
-				float result1 = PseudoCross(edgePoint2 - edgePoint1, constraintEdges[i].mPoints[0] - edgePoint1);
-				float result2 = PseudoCross(edgePoint2 - edgePoint1, constraintEdges[i].mPoints[1] - edgePoint1);
+				float result1 = PseudoCross((edgePoint2 - edgePoint1), (constraintEdges[i].mPoints[0] - edgePoint1));
+				float result2 = PseudoCross((edgePoint2 - edgePoint1), (constraintEdges[i].mPoints[1] - edgePoint1));
 
-				float result3 = PseudoCross(constraintEdges[i].mPoints[1] - constraintEdges[i].mPoints[0], edgePoint1 - constraintEdges[i].mPoints[0]);
-				float result4 = PseudoCross(constraintEdges[i].mPoints[1] - constraintEdges[i].mPoints[0], edgePoint2 - constraintEdges[i].mPoints[0]);
+				float result3 = PseudoCross((constraintEdges[i].mPoints[1] - constraintEdges[i].mPoints[0]), (edgePoint1 - constraintEdges[i].mPoints[0]));
+				float result4 = PseudoCross((constraintEdges[i].mPoints[1] - constraintEdges[i].mPoints[0]), (edgePoint2 - constraintEdges[i].mPoints[0]));
 
-				float a = result1 * result2;
-				float b = result3 * result4;
-
-				if (result1 * result2 <= 0 && result3 * result4 <= 0)
+				if (result1 * result2 < 0 && result3 * result4 < 0)
 				{
 					overlappingEdges.push_back(tEdge);
 				}
@@ -680,51 +732,43 @@ std::vector<TriEdge> RemoveDuplicateEdges(std::vector<TriEdge>& edges)
 
 void HandleOverlapsWithConstraints(std::vector<TriEdge>& edges, std::vector<TriEdge>& constraints, std::vector<Triangle*>& listOfTriangles)
 {
-	while (!edges.empty())
+	for (size_t i = 0; i < edges.size(); i++)
 	{
-		if (edges.size() == 4)
-		{
-			int a = 0;
-		}
-		AssignTrianglesToEdges(edges[0], listOfTriangles);
-		SwapEdge(edges[0], listOfTriangles);
-		edges.erase(edges.begin());
+		std::vector<int> results = FindSharedEdgeTriangles(edges[i], listOfTriangles);
+		if (results.empty() || results.size() == 1) { continue; }
+
+		SwapTrianglesWithKnownAdjacent(listOfTriangles[results[0]], results[0], listOfTriangles[results[1]], results[1], listOfTriangles, edges[i]);
 	}
 }
 
 void SwapEdge(TriEdge& edge, std::vector<Triangle*>& listOfTriangles)
 {
-	Triangle* tri1 = new Triangle();
-	Triangle* tri2 = new Triangle();
+	Triangle* tri1 = listOfTriangles[edge.mTriIndex[0]];
+	Triangle* tri2 = listOfTriangles[edge.mTriIndex[1]];
 	int removalIndex[2];
 
 
-	for (int i = 0; i < listOfTriangles.size(); i++)
-	{
-		if (IsSameTriangle(edge.mTriangles[0], listOfTriangles[i]))
-		{
-			tri1 = listOfTriangles[i];
-			removalIndex[0] = i;
-			continue;
-		}
-		else if (IsSameTriangle(edge.mTriangles[1], listOfTriangles[i]))
-		{
-			tri2 = listOfTriangles[i];
-			removalIndex[1] = i;
-		}
-	}
-
-	if (removalIndex[0] < 0 || removalIndex[1] < 0)
-	{
-		int j = 0;
-	}
+	//for (int i = 0; i < listOfTriangles.size(); i++)
+	//{
+	//	if (IsSameTriangle(edge.mTriangles[0], listOfTriangles[i]))
+	//	{
+	//		tri1 = listOfTriangles[i];
+	//		removalIndex[0] = i;
+	//		continue;
+	//	}
+	//	else if (IsSameTriangle(edge.mTriangles[1], listOfTriangles[i]))
+	//	{
+	//		tri2 = listOfTriangles[i];
+	//		removalIndex[1] = i;
+	//	}
+	//}
 
 	Vec2 connectPoint1;
 	Vec2 connectPoint2;
 
 	for (Vec2 v : tri1->mPoints)
 	{
-		if (v != edge.mPoints[0] && v != edge.mPoints[1])
+		if ((v != edge.mPoints[0]) && (v != edge.mPoints[1]))
 		{
 			connectPoint1 = v;
 		}
@@ -732,36 +776,35 @@ void SwapEdge(TriEdge& edge, std::vector<Triangle*>& listOfTriangles)
 
 	for (Vec2 v : tri2->mPoints)
 	{
-		if (v != edge.mPoints[0] && v != edge.mPoints[1])
+		if ((v != edge.mPoints[0]) && (v != edge.mPoints[1]))
 		{
 			connectPoint2 = v;
 		}
+	}
+
+	if (edge.mTriIndex[0] > edge.mTriIndex[1])
+	{
+		listOfTriangles.erase(listOfTriangles.begin() + edge.mTriIndex[0]);
+		listOfTriangles.erase(listOfTriangles.begin() + edge.mTriIndex[1]);
+	}
+	else
+	{
+		listOfTriangles.erase(listOfTriangles.begin() + edge.mTriIndex[1]);
+		listOfTriangles.erase(listOfTriangles.begin() + edge.mTriIndex[0]);
 	}
 
 	std::vector<Triangle*> potentialTris;
 	potentialTris.push_back(CreateClockwiseTriangle(std::vector<Vec2>{edge.mPoints[0], connectPoint1, connectPoint2}));
 	potentialTris.push_back(CreateClockwiseTriangle(std::vector<Vec2>{edge.mPoints[1], connectPoint1, connectPoint2}));
 
-	if (!IsDuplicateTriangle(potentialTris[0], listOfTriangles))
+	if (!IsDuplicateTriangle(potentialTris[0], listOfTriangles) && IsTriangleCollinear(potentialTris[0]))
 	{
 		listOfTriangles.push_back(potentialTris[0]);
 	}
 
-	if (!IsDuplicateTriangle(potentialTris[1], listOfTriangles))
+	if (!IsDuplicateTriangle(potentialTris[1], listOfTriangles) && IsTriangleCollinear(potentialTris[1]))
 	{
 		listOfTriangles.push_back(potentialTris[1]);
-	}
-
-
-	if (removalIndex[0] > removalIndex[1])
-	{
-		listOfTriangles.erase(listOfTriangles.begin() + removalIndex[0]);
-		listOfTriangles.erase(listOfTriangles.begin() + removalIndex[1]);
-	}
-	else
-	{
-		listOfTriangles.erase(listOfTriangles.begin() + removalIndex[1]);
-		listOfTriangles.erase(listOfTriangles.begin() + removalIndex[0]);
 	}
 }
 
@@ -815,43 +858,20 @@ void HandleOverlappingEdges(std::vector<Triangle*>& listOfTriangles)
 
 void RemoveTrianglesFromObstacles(std::vector<Obstacle*> obstacles, std::vector<Triangle*>& listOfTriangles)
 {
-	for (Obstacle* obstacle : obstacles)
+	std::vector<int> triIndexRemoval;
+	
+	for (int i = 0; i < listOfTriangles.size(); i++)
 	{
-		std::vector<int> triIndexRemoval;
-		std::vector<Vec2>& conHull = obstacle->GetPoints();
-		for (int i = 0; i < listOfTriangles.size(); i++)
+		if (i == 18 || i == 40)
 		{
-			if (std::find(conHull.begin(), conHull.end(), listOfTriangles[i]->mPoints[0]) != conHull.end())
-			{
-				if (std::find(conHull.begin(), conHull.end(), listOfTriangles[i]->mPoints[1]) != conHull.end())
-				{
-					if (std::find(conHull.begin(), conHull.end(), listOfTriangles[i]->mPoints[2]) != conHull.end())
-					{
-						//Vec2 triMidPoint = Vec2();
-						//for (Vec2 v : listOfTriangles[i]->mPoints)
-						//{
-						//	triMidPoint += v;
-						//}
-						//triMidPoint /= 3;
-
-						//if (IsPointInObstacle(triMidPoint, obstacles, 1000))
-						//{
-						triIndexRemoval.push_back(i);
-
-					}
-				}
-			}
+			int a = 0;
 		}
 
-		for (int i = (int)triIndexRemoval.size() - 1; i >= 0; i--)
+		if (IsTriangleInObstacle(listOfTriangles[i], obstacles))
 		{
-			listOfTriangles.erase(listOfTriangles.begin() + triIndexRemoval[i]);
+			triIndexRemoval.push_back(i);
 		}
 	}
-
-
-
-
 
 	//for (Obstacle* obstacle : obstacles)
 	//{
@@ -859,9 +879,21 @@ void RemoveTrianglesFromObstacles(std::vector<Obstacle*> obstacles, std::vector<
 	//	std::vector<Vec2>& conHull = obstacle->GetPoints();
 	//	for (int i = 0; i < listOfTriangles.size(); i++)
 	//	{
-	//		for (Vec2 p : listOfTriangles[i]->mPoints)
+	//
+	//		Vec2 normals[3];
+	//		normals[0] = (listOfTriangles[i]->mEdgeList[0].mPoints[0] - listOfTriangles[i]->mEdgeList[0].mPoints[1]).GetRotatedBy270().GetNormalised();
+	//		normals[1] = (listOfTriangles[i]->mEdgeList[1].mPoints[0] - listOfTriangles[i]->mEdgeList[1].mPoints[1]).GetRotatedBy270().GetNormalised();
+	//		normals[2] = (listOfTriangles[i]->mEdgeList[2].mPoints[0] - listOfTriangles[i]->mEdgeList[2].mPoints[1]).GetRotatedBy270().GetNormalised();
+	//
+	//		Vec2 edgeMidPoints[3];
+	//		edgeMidPoints[0] = (listOfTriangles[i]->mEdgeList[0].mPoints[0] + listOfTriangles[i]->mEdgeList[0].mPoints[1]) / 2;
+	//		edgeMidPoints[1] = (listOfTriangles[i]->mEdgeList[1].mPoints[0] + listOfTriangles[i]->mEdgeList[1].mPoints[1]) / 2;
+	//		edgeMidPoints[2] = (listOfTriangles[i]->mEdgeList[2].mPoints[0] + listOfTriangles[i]->mEdgeList[2].mPoints[1]) / 2;
+	//
+	//
+	//		for (int j = 0; j < 3; j++)
 	//		{
-	//			if (std::find(conHull.begin(), conHull.end(), p) != conHull.end())
+	//			if (IsPointInObstacle(edgeMidPoints[j] - (normals[j] * 0.01), obstacles, 1000))
 	//			{
 	//				triIndexRemoval.push_back(i);
 	//				break;
@@ -869,9 +901,25 @@ void RemoveTrianglesFromObstacles(std::vector<Obstacle*> obstacles, std::vector<
 	//		}
 	//	}
 	//
-	//	for (int i = (int)triIndexRemoval.size() - 1; i >= 0; i--)
-	//	{
-	//		listOfTriangles.erase(listOfTriangles.begin() + triIndexRemoval[i]);
-	//	}
+	for (int i = (int)triIndexRemoval.size() - 1; i >= 0; i--)
+	{
+		listOfTriangles.erase(listOfTriangles.begin() + triIndexRemoval[i]);
+	}
 	//}
+}
+
+std::vector<int> FindSharedEdgeTriangles(const TriEdge& edge, const std::vector<Triangle*>& listOfTriangles)
+{
+	std::vector<int> returnInts;
+
+	for (int i = 0; i < (int)listOfTriangles.size(); i++)
+	{
+		if (std::find(std::begin(listOfTriangles[i]->mPoints), std::end(listOfTriangles[i]->mPoints), edge.mPoints[0]) != std::end(listOfTriangles[i]->mPoints) && 
+			std::find(std::begin(listOfTriangles[i]->mPoints), std::end(listOfTriangles[i]->mPoints), edge.mPoints[1]) != std::end(listOfTriangles[i]->mPoints))
+		{
+			returnInts.push_back(i);
+		}
+	}
+
+	return returnInts;
 }

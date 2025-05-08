@@ -9,5 +9,6 @@ struct TriEdge
 {
 	Vec2 mPoints[2];
 	std::vector<Triangle*> mTriangles;
+	std::vector<int> mTriIndex;
 };
 

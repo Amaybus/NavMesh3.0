@@ -1,5 +1,6 @@
 #include "Utility.h"
 #include "Obstacle.h"
+#include "Triangle.h"
 #include "Edge.h"
 
 #include <cmath>
@@ -53,7 +54,7 @@ bool IsPointInObstacle(Vec2 point, std::vector<Obstacle*>& obstacles, float leve
 			float result3 = PseudoCross((e.mPoints[1] - e.mPoints[0]), (point - e.mPoints[0]));
 			float result4 = PseudoCross((e.mPoints[1] - e.mPoints[0]), (endPoint - e.mPoints[0]));
 
-			
+
 			if (result1 * result2 < 0 && result3 * result4 < 0)
 			{
 				count++;
@@ -104,6 +105,56 @@ bool IsPointInConvexObstacle(Vec2 point, std::vector<Obstacle*>& obstacles)
 	return false;
 }
 
+bool IsTriangleInObstacle(Triangle* triangle, std::vector<Obstacle*>& obstacles)
+{
+	std::vector<TriEdge> overlappedEdges;
+	Vec2 normals[3];
+	normals[0] = (triangle->mEdgeList[0].mPoints[0] - triangle->mEdgeList[0].mPoints[1]).GetRotatedBy270().GetNormalised();
+	normals[1] = (triangle->mEdgeList[1].mPoints[0] - triangle->mEdgeList[1].mPoints[1]).GetRotatedBy270().GetNormalised();
+	normals[2] = (triangle->mEdgeList[2].mPoints[0] - triangle->mEdgeList[2].mPoints[1]).GetRotatedBy270().GetNormalised();
+
+	Vec2 edgeMidPoints[3];
+	edgeMidPoints[0] =((triangle->mEdgeList[0].mPoints[0] * 1.22) + triangle->mEdgeList[0].mPoints[1]) / 2.22;
+	edgeMidPoints[1] =((triangle->mEdgeList[1].mPoints[0] * 1.22) + triangle->mEdgeList[1].mPoints[1]) / 2.22;
+	edgeMidPoints[2] =((triangle->mEdgeList[2].mPoints[0] * 1.22) + triangle->mEdgeList[2].mPoints[1]) / 2.22;
+
+	int count = 0;
+
+	for (int i = 0; i < 3; i++)
+	{
+		Vec2 point = edgeMidPoints[i] - (normals[i] * 0.01);
+		for (Obstacle* ob : obstacles)
+		{
+			std::vector<TriEdge> currentObEdges;
+			Vec2 endPoint = edgeMidPoints[i] + normals[i] * 1000;
+
+			currentObEdges = ConstructObstacleEdges(ob);
+
+			for (TriEdge e : currentObEdges)
+			{
+				float result1 = PseudoCross((endPoint - point), (e.mPoints[0] - point));
+				float result2 = PseudoCross((endPoint - point), (e.mPoints[1] - point));
+
+				float result3 = PseudoCross((e.mPoints[1] - e.mPoints[0]), (point - e.mPoints[0]));
+				float result4 = PseudoCross((e.mPoints[1] - e.mPoints[0]), (endPoint - e.mPoints[0]));
+
+
+				if (result1 * result2 < 0 && result3 * result4 < 0)
+				{
+					count++;
+					overlappedEdges.push_back(e);
+				}
+			}
+		}
+	}
+
+	if (count % 2 > 0)
+	{
+		return true;
+	}
+	return false;
+}
+
 std::vector<TriEdge> ConstructObstacleEdges(Obstacle* ob)
 {
 	std::vector<TriEdge> returnEdges;
@@ -136,21 +187,21 @@ std::vector<Vec2> AddBufferToObstacles(std::vector<Obstacle*>& obstacles)
 		for (int j = 0; j < points.size(); j++)
 		{
 			if (j == 0) { previous = points[points.size() - 1]; }
-			else { previous = points[j - 1];}
+			else { previous = points[j - 1]; }
 
 			if (j == points.size() - 1) { next = points[0]; }
-			else { next = points[j + 1];}
+			else { next = points[j + 1]; }
 
 			Vec2 direction = (points[j] - next).Normalise();
 			Vec2 direction2 = (points[j] - previous).Normalise();
 
-			Vec2 final = (direction + direction2) /2;
+			Vec2 final = (direction + direction2) / 2;
 
 			returnPoints.push_back(points[j] + final * 0.1);
 
 		}
 	}
-	
+
 
 	return returnPoints;
 }
