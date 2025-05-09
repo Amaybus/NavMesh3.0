@@ -87,28 +87,28 @@ void World::Initialise()
 
 	mNavMesh->Build(mObstacles);
 
-	// scale points and obstacles to adjust the level size
-	for (Obstacle* ob : mObstacles)
-	{
-		std::vector<Vec2>& points = ob->GetPoints();
-		for (Vec2& v : points)
-		{
-			v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
-		}
-	}
-	
-	for (Vec2& v : mNavMesh->GetPoints())
-	{
-		v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
-	}
-	
-	for (Triangle* t : mNavMesh->GetTriangles())
-	{
-		for (Vec2& v : t->mPoints)
-		{
-			v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
-		}
-	}
+	//// scale points and obstacles to adjust the level size
+	//for (Obstacle* ob : mObstacles)
+	//{
+	//	std::vector<Vec2>& points = ob->GetPoints();
+	//	for (Vec2& v : points)
+	//	{
+	//		v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
+	//	}
+	//}
+	//
+	//for (Vec2& v : mNavMesh->GetPoints())
+	//{
+	//	v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
+	//}
+	//
+	//for (Triangle* t : mNavMesh->GetTriangles())
+	//{
+	//	for (Vec2& v : t->mPoints)
+	//	{
+	//		v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
+	//	}
+	//}
 }
 
 void World::Update(float delta)
@@ -143,24 +143,6 @@ void World::Draw(LineRenderer* lines)
 	}
 
 	DrawCircumcircles(lines);
-
-	Triangle* tri = mNavMesh->GetTriangles()[18];
-	Vec2 normals[3];
-	normals[0] = (tri->mEdgeList[0].mPoints[0] - tri->mEdgeList[0].mPoints[1]).GetRotatedBy270().GetNormalised();
-	normals[1] = (tri->mEdgeList[1].mPoints[0] - tri->mEdgeList[1].mPoints[1]).GetRotatedBy270().GetNormalised();
-	normals[2] = (tri->mEdgeList[2].mPoints[0] - tri->mEdgeList[2].mPoints[1]).GetRotatedBy270().GetNormalised();
-
-	Vec2 edgeMidPoints[3];
-	edgeMidPoints[0] = (tri->mEdgeList[0].mPoints[0] + tri->mEdgeList[0].mPoints[1]) / 2;
-	edgeMidPoints[1] = (tri->mEdgeList[1].mPoints[0] + tri->mEdgeList[1].mPoints[1]) / 2;
-	edgeMidPoints[2] = (tri->mEdgeList[2].mPoints[0] + tri->mEdgeList[2].mPoints[1]) / 2;
-
-	lines->DrawCross(edgeMidPoints[0] - (normals[0] * 0.01),0.1f ,Colour::MAGENTA);
-	lines->DrawCross(edgeMidPoints[1] - (normals[1] * 0.01),0.1f ,Colour::ORANGE);
-	lines->DrawCross(edgeMidPoints[2] - (normals[2] * 0.01),0.1f ,Colour::BLUE);
-	lines->DrawLineWithArrow(edgeMidPoints[0] - (normals[0] * 0.01), edgeMidPoints[0] - (normals[0] * 0.01) * 1000, Colour::MAGENTA, 0.01);
-	lines->DrawLineWithArrow(edgeMidPoints[1] - (normals[1] * 0.01), edgeMidPoints[1] - (normals[1] * 0.01) * 1000, Colour::ORANGE, 0.01);
-	lines->DrawLineWithArrow(edgeMidPoints[2] - (normals[2] * 0.01), edgeMidPoints[2] - (normals[2] * 0.01) * 1000, Colour::BLUE, 0.01);
 }															
 
 std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid, TileType tileType)
@@ -303,6 +285,21 @@ void World::DrawCircumcircles(LineRenderer* lines)
 		lines->DrawCircle(a,0.1f, Colour::RED);
 		lines->DrawCircle(b,0.1f, Colour::RED);
 		lines->DrawCircle(c,0.1f, Colour::RED);
-							 
+
+
+		Vec2 normals[3];
+		normals[0] = (tri->mEdgeList[0].mPoints[0] - tri->mEdgeList[0].mPoints[1]).GetRotatedBy270().GetNormalised();
+		normals[1] = (tri->mEdgeList[1].mPoints[0] - tri->mEdgeList[1].mPoints[1]).GetRotatedBy270().GetNormalised();
+		normals[2] = (tri->mEdgeList[2].mPoints[0] - tri->mEdgeList[2].mPoints[1]).GetRotatedBy270().GetNormalised();
+
+		Vec2 edgeMidPoints[3];
+		edgeMidPoints[0] = ((tri->mEdgeList[0].mPoints[0] * 1.22) + tri->mEdgeList[0].mPoints[1]) / 2.22;
+		edgeMidPoints[1] = ((tri->mEdgeList[1].mPoints[0] * 1.22) + tri->mEdgeList[1].mPoints[1]) / 2.22;
+		edgeMidPoints[2] = ((tri->mEdgeList[2].mPoints[0] * 1.22) + tri->mEdgeList[2].mPoints[1]) / 2.22;
+
+		for (int i = 0; i < 3; i++)
+		{
+			lines->DrawLineWithArrow(edgeMidPoints[i] - (normals[i] * 0.01), edgeMidPoints[i] + normals[i] * 2, Colour::MAGENTA, 0.1f);
+		}
 }
 
