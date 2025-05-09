@@ -323,7 +323,7 @@ void RestoreDelauneyness(std::vector<Triangle*>& listOfTriangles, std::vector<Ve
 				}
 			}
 		}
-		if (safety > 500) { return; }
+		if (safety > 300) { return; }
 	}
 }
 
@@ -453,6 +453,7 @@ void SwapTrianglesWithKnownAdjacent(Triangle* tri1, int tri1Index, Triangle* tri
 	// Ensure we remove the higher value first as to not ruin the indices
 	if (tri1Index > tri2Index)
 	{
+
 		listToCheck.erase(listToCheck.begin() + tri1Index);
 		listToCheck.erase(listToCheck.begin() + tri2Index);
 	}
