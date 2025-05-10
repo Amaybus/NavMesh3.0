@@ -64,7 +64,7 @@ void World::Initialise()
 			if (level.At(x, y) == TileType::EMPTY && !isInnerRegionDefined)
 			{
 				std::vector<Vec2> navPoints = LineTrace(Vec2(x, y), level, TileType::EMPTY);
-
+	
 				mNavMesh->AddPointList(navPoints);
 	
 				isInnerRegionDefined = true;
@@ -78,7 +78,7 @@ void World::Initialise()
 				if (IsPointInObstacle(Vec2(x, y), mObstacles, level.GetWidth())) { continue; }
 	
 				std::vector<Vec2> obPoints = LineTrace(Vec2(x, y), level, TileType::OBSTACLE);
-
+	
 				Obstacle* ob = new Obstacle(obPoints);
 				mObstacles.push_back(ob);
 	

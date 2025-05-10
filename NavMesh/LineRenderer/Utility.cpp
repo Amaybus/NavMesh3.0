@@ -145,13 +145,14 @@ bool IsTriangleInObstacle(Triangle* triangle, std::vector<Obstacle*>& obstacles)
 					overlappedEdges.push_back(e);
 				}
 			}
+
+			if (count % 2 > 0)
+			{
+				return true;
+			}
 		}
 	}
 
-	if (count % 2 > 0)
-	{
-		return true;
-	}
 	return false;
 }
 
