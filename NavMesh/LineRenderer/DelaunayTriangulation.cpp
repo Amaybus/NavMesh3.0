@@ -5,6 +5,7 @@
 #include "Grid.h"
 #include "Edge.h"
 #include "Vec2.h"
+#include <algorithm>
 
 std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std::vector<Obstacle*>& obstacles)
 {
@@ -12,7 +13,11 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 	{
 		for (Vec2 v : ob->GetPoints())
 		{
-			points.push_back(v);
+			// Dont add any pounts we already have in the list
+			if(std::find(points.begin(), points.end(), v) == points.end())
+			{
+				points.push_back(v);
+			}
 		}
 	}
 
@@ -26,10 +31,8 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 	superTriangle[2] = (Vec2{ 1000,-1000 });
 	triangleStack.push_back(CreateClockwiseTriangle(superTriangle));
 
-	// Loop through each point
 	for (int i = 0; i < points.size(); i++)
 	{
-
 		int index = -1;
 		// Find triangle that encloses the point we are checking
 		for (int j = 0; j < triangleStack.size(); j++)
@@ -68,7 +71,10 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 			// Add the newly fixed triangles to the stack
 			for (Triangle* tri : result)
 			{
-				triangleStack.push_back(tri);
+				if (!IsDuplicateTriangle(tri, triangleStack))
+				{
+					triangleStack.push_back(tri);
+				}
 			}
 		}
 
@@ -78,7 +84,7 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 		// Check if p lies inside its circumcircle
 		for (int k = (int)triangleStack.size() - 1; k > 0; k--)
 		{
-			CheckCircumcircle(triangleStack[k], k, points[i], triangleStack);
+ 			CheckCircumcircle(triangleStack[k], k, points[i], triangleStack);
 		}
 	}
 
@@ -98,10 +104,10 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 		}
 	}
 
-	RestoreDelauneyness(returnList, points);
-
 	AssignEdgesAndAdjTris(returnList);
-	return ConstrainedDelaunayTriangulation(returnList, obstacles);
+	returnList = ConstrainedDelaunayTriangulation(returnList, obstacles);
+	RestoreDelauneyness(returnList, points);
+	return returnList;
 }
 
 std::vector<Triangle*> ConstrainedDelaunayTriangulation(std::vector<Triangle*>& listOfTriangles, const std::vector<Obstacle*>& obstacles)
@@ -323,7 +329,7 @@ void RestoreDelauneyness(std::vector<Triangle*>& listOfTriangles, std::vector<Ve
 				}
 			}
 		}
-		if (safety > 300) { return; }
+		if (safety > 100) { return; }
 	}
 }
 
@@ -368,11 +374,13 @@ bool CheckCircumcircle(Triangle* triangle, int triangleIndex, const Vec2& pointT
 
 void SwapTriangles(Triangle* triangleToSwap, int triangleIndex, const Vec2& point, std::vector<Triangle*>& listToCheck)
 {
-	// Find the adjacent triangle containing our point
 	TriangleAndIndex adjacentTriangle = FindAdjacentTriangle(listToCheck, triangleToSwap, point);
 
 	// Move on if no adjacent triangle is found
-	if (adjacentTriangle.index == -1) { return; }
+	if (adjacentTriangle.index == -1)
+	{
+		return;
+	}
 
 	Vec2 connectPoint = Vec2();
 
@@ -471,7 +479,7 @@ void SwapTrianglesWithKnownAdjacent(Triangle* tri1, int tri1Index, Triangle* tri
 	{
 		listToCheck.push_back(triangle1);
 	}
-	
+
 	if (!IsDuplicateTriangle(triangle2, listToCheck) && !IsTriangleCollinear(triangle2))
 	{
 		listToCheck.push_back(triangle2);
@@ -615,8 +623,9 @@ void ConstructAdjacentTriangles(Triangle* triangle, const std::vector<Triangle*>
 	{
 		e.mTriangles.push_back(triangle);
 
-		for (Triangle* t : listOfTriangles)
+		for (int i = 0; i < listOfTriangles.size(); i++)
 		{
+			Triangle* t = listOfTriangles[i];
 			if (IsSameTriangle(t, triangle)) { continue; }
 
 			if (std::find(std::begin(t->mPoints), std::end(t->mPoints), e.mPoints[0]) != std::end(t->mPoints) &&
@@ -624,6 +633,7 @@ void ConstructAdjacentTriangles(Triangle* triangle, const std::vector<Triangle*>
 			{
 				e.mTriangles.push_back(t);
 				triangle->mAdjTris.push_back(t);
+				triangle->adjTriIndices.push_back(i);
 			}
 		}
 	}
@@ -635,14 +645,14 @@ void AssignTrianglesToEdges(Triangle* triangle, std::vector<Triangle*>& listOfTr
 	{
 		edge.mTriangles.push_back(triangle);
 
-		for(int i = 0; i < listOfTriangles.size(); i++)
+		for (int i = 0; i < listOfTriangles.size(); i++)
 		{
 			Triangle* t = listOfTriangles[i];
 			if (IsSameTriangle(t, triangle)) { continue; }
 
-			if(std::find(std::begin(t->mPoints), std::end(t->mPoints), edge.mPoints[0]) != std::end(t->mPoints) && std::find(std::begin(t->mPoints), std::end(t->mPoints), edge.mPoints[1]) != std::end(t->mPoints) || 
-			  (std::find(std::begin(t->mPoints), std::end(t->mPoints), edge.mPoints[0]) != std::end(t->mPoints) && std::find(std::begin(t->mPoints), std::end(t->mPoints), edge.mPoints[2]) != std::end(t->mPoints)) || 
-			  (std::find(std::begin(t->mPoints), std::end(t->mPoints), edge.mPoints[2]) != std::end(t->mPoints) && std::find(std::begin(t->mPoints), std::end(t->mPoints), edge.mPoints[0]) != std::end(t->mPoints)))
+			if (std::find(std::begin(t->mPoints), std::end(t->mPoints), edge.mPoints[0]) != std::end(t->mPoints) && std::find(std::begin(t->mPoints), std::end(t->mPoints), edge.mPoints[1]) != std::end(t->mPoints) ||
+				(std::find(std::begin(t->mPoints), std::end(t->mPoints), edge.mPoints[0]) != std::end(t->mPoints) && std::find(std::begin(t->mPoints), std::end(t->mPoints), edge.mPoints[2]) != std::end(t->mPoints)) ||
+				(std::find(std::begin(t->mPoints), std::end(t->mPoints), edge.mPoints[2]) != std::end(t->mPoints) && std::find(std::begin(t->mPoints), std::end(t->mPoints), edge.mPoints[0]) != std::end(t->mPoints)))
 			{
 				edge.mTriangles.push_back(t);
 				edge.mTriIndex.push_back(i);
@@ -685,7 +695,7 @@ std::vector<TriEdge> FindOverlapsWithConstraints(std::vector<TriEdge> constraint
 		{
 			// Check if the points overlap with the edge
 			// Get the vector of the constraint edge
- 			for (TriEdge tEdge : listOfTriangles[j]->mEdgeList)
+			for (TriEdge tEdge : listOfTriangles[j]->mEdgeList)
 			{
 				Vec2 edgePoint1 = tEdge.mPoints[0];
 				Vec2 edgePoint2 = tEdge.mPoints[1];
@@ -827,14 +837,14 @@ void HandleOverlappingEdges(std::vector<Triangle*>& listOfTriangles)
 								point = listOfTriangles[j]->mPoints[a];
 							}
 						}
-						
+
 						Triangle* newTriangle = CreateClockwiseTriangle(std::vector<Vec2>{vEdge.mPoints[0], vEdge.mPoints[1], point});
-						
+
 						if (!IsDuplicateTriangle(newTriangle, listOfTriangles) && !IsTriangleCollinear(newTriangle))
 						{
 							listOfTriangles.push_back(newTriangle);
 						}
-						
+
 						listOfTriangles.erase(listOfTriangles.begin() + j);
 					}
 				}
@@ -846,7 +856,7 @@ void HandleOverlappingEdges(std::vector<Triangle*>& listOfTriangles)
 void RemoveTrianglesFromObstacles(std::vector<Obstacle*> obstacles, std::vector<Triangle*>& listOfTriangles)
 {
 	std::vector<int> triIndexRemoval;
-	
+
 	for (int i = 0; i < listOfTriangles.size(); i++)
 	{
 		if (IsTriangleInObstacle(listOfTriangles[i], obstacles))
@@ -871,7 +881,7 @@ std::vector<int> FindSharedEdgeTriangles(const TriEdge& edge, const std::vector<
 
 	for (int i = 0; i < (int)listOfTriangles.size(); i++)
 	{
-		if (std::find(std::begin(listOfTriangles[i]->mPoints), std::end(listOfTriangles[i]->mPoints), edge.mPoints[0]) != std::end(listOfTriangles[i]->mPoints) && 
+		if (std::find(std::begin(listOfTriangles[i]->mPoints), std::end(listOfTriangles[i]->mPoints), edge.mPoints[0]) != std::end(listOfTriangles[i]->mPoints) &&
 			std::find(std::begin(listOfTriangles[i]->mPoints), std::end(listOfTriangles[i]->mPoints), edge.mPoints[1]) != std::end(listOfTriangles[i]->mPoints))
 		{
 			returnInts.push_back(i);
@@ -880,3 +890,4 @@ std::vector<int> FindSharedEdgeTriangles(const TriEdge& edge, const std::vector<
 
 	return returnInts;
 }
+

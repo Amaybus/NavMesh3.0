@@ -3,7 +3,9 @@
 #include "Grid.h"
 #include "Triangle.h"
 #include "ImGui.h"
+#include "Key.h"
 #include <algorithm>
+#include "DelaunayTriangulation.h"
 
 World::World()
 {
@@ -109,6 +111,7 @@ void World::Initialise()
 	//		v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
 	//	}
 	//}
+	debugpoints = navMesh->GetPoints();
 }
 
 void World::Update(float delta)
@@ -143,7 +146,8 @@ void World::Draw(LineRenderer* lines)
 	}
 
 	DrawCircumcircles(lines);
-}															
+}
+
 
 std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid, TileType tileType)
 {
