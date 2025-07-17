@@ -89,28 +89,28 @@ void World::Initialise()
 
 	mNavMesh->Build(mObstacles);
 
-	//// scale points and obstacles to adjust the level size
-	//for (Obstacle* ob : mObstacles)
-	//{
-	//	std::vector<Vec2>& points = ob->GetPoints();
-	//	for (Vec2& v : points)
-	//	{
-	//		v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
-	//	}
-	//}
-	//
-	//for (Vec2& v : mNavMesh->GetPoints())
-	//{
-	//	v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
-	//}
-	//
-	//for (Triangle* t : mNavMesh->GetTriangles())
-	//{
-	//	for (Vec2& v : t->mPoints)
-	//	{
-	//		v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
-	//	}
-	//}
+	// scale points and obstacles to adjust the level size
+	for (Obstacle* ob : mObstacles)
+	{
+		std::vector<Vec2>& points = ob->GetPoints();
+		for (Vec2& v : points)
+		{
+			v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
+		}
+	}
+	
+	for (Vec2& v : mNavMesh->GetPoints())
+	{
+		v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
+	}
+	
+	for (Triangle* t : mNavMesh->GetTriangles())
+	{
+		for (Vec2& v : t->mPoints)
+		{
+			v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
+		}
+	}
 	debugpoints = navMesh->GetPoints();
 }
 

@@ -12,7 +12,7 @@ void NavigationMesh::Draw(LineRenderer* lines)
 {
 	for (int i = 0; i < mPoints.size(); i++)
 	{
-		//lines->DrawCircle(mPoints[i], 100, Colour::GREEN);
+		lines->DrawCircle(mPoints[i], 100, Colour::GREEN);
 		//lines->AddPointToLine(mPoints[i], Colour::BLUE);
 	}
 	//lines->FinishLineLoop();
@@ -26,7 +26,7 @@ void NavigationMesh::Draw(LineRenderer* lines)
 
 		Vec2 result = t->mPoints[0] + t->mPoints[1] + t->mPoints[2];
 		result /= 3;
-		TextStream output(lines, Vec2(result.x, result.y), 0.1f, Colour::YELLOW);
+		TextStream output(lines, Vec2(result.x, result.y), 100.0f, Colour::YELLOW);
 		output << index;
 		index++;
 	}

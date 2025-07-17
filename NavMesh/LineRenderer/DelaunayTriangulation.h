@@ -25,6 +25,9 @@ struct TriangleAndIndex
 // If we have a random set of points
 std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std::vector<Obstacle*>& obstacles);
 
+// Poisson Disk
+void PoissonDisk(std::vector<Vec2>& points, const std::vector<Obstacle*>& obstacles);
+
 // If we want constraints
 std::vector<Triangle*> ConstrainedDelaunayTriangulation(std::vector<Triangle*>& listOfTriangles, const std::vector<Obstacle*>& obstacles);
 

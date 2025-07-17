@@ -5,10 +5,13 @@
 #include "Grid.h"
 #include "Edge.h"
 #include "Vec2.h"
+#include <random>
 #include <algorithm>
 
 std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std::vector<Obstacle*>& obstacles)
 {
+	PoissonDisk(points, obstacles);
+
 	for (Obstacle* ob : obstacles)
 	{
 		for (Vec2 v : ob->GetPoints())
@@ -108,6 +111,50 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 	returnList = ConstrainedDelaunayTriangulation(returnList, obstacles);
 	RestoreDelauneyness(returnList, points);
 	return returnList;
+}
+
+void PoissonDisk(std::vector<Vec2>& points, const std::vector<Obstacle*>& obstacles)
+{
+	std::vector<Vec2> openList = points;
+	std::vector<Vec2> closedList;
+	int attempts = 100; 
+	float minDist = 2;
+	float maxDist = 5;
+	bool isValid = true;
+
+	while (!openList.empty())
+	{
+		for (int i = 0; i < attempts; i++)
+		{
+			float theta = rand() % 360;
+			isValid = true;
+			int range = maxDist - minDist + 1;
+			Vec2 point = Vec2(((rand() % range + minDist) + openList[0].x)*cos(DegToRad(theta)), (rand() % range + minDist) + openList[0].y *sin(DegToRad(theta)));
+ 
+			if (point.x < 0.5 || point.x > 18.5 || point.y < 0.5 || point.y > 14.5) { continue; }
+
+			if (IsPointInObstacle(point, obstacles, 100)) { continue; }
+	
+			for (Vec2 v : openList)
+			{
+				if ((v - point).GetMagnitude() < minDist) { isValid = false; }
+			}
+			
+			if (!isValid) { continue; }
+
+			for (Vec2 v : closedList)
+			{
+				if ((v - point).GetMagnitude() < minDist) { isValid = false; }
+			}
+
+			if (isValid) { openList.push_back(point); }
+		}
+
+		closedList.push_back(openList[0]);
+		openList.erase(openList.begin());
+	}
+
+	points = closedList;
 }
 
 std::vector<Triangle*> ConstrainedDelaunayTriangulation(std::vector<Triangle*>& listOfTriangles, const std::vector<Obstacle*>& obstacles)

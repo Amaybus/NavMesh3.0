@@ -28,7 +28,6 @@ class World : public Application
 	std::vector<PathAgent*> mPathAgents;
 	std::vector<Vec2> debugpoints;
 
-
 public:
 	World();
 	~World();

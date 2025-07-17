@@ -35,7 +35,7 @@ float FindAngle(Vec2 point, Vec2 next, Vec2 previous)
 	return result;
 }
 
-bool IsPointInObstacle(Vec2 point, std::vector<Obstacle*>& obstacles, float levelWidth)
+bool IsPointInObstacle(Vec2 point, const std::vector<Obstacle*>& obstacles, float levelWidth)
 {
 	int count = 0;
 
