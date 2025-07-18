@@ -99,3 +99,5 @@ void HandleOverlappingEdges(std::vector<Triangle*>& listOfTriangles);
 void RemoveTrianglesFromObstacles(std::vector<Obstacle*> obstacles, std::vector<Triangle*>& listOfTriangles);
 
 std::vector<int> FindSharedEdgeTriangles(const TriEdge& edge, const std::vector<Triangle*>& listOfTriangles);
+
+void HandleOverlapsWithObstacleEdges(std::vector<TriEdge>, std::vector<Triangle*>& listOfTriangles);
