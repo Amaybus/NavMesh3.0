@@ -26,7 +26,7 @@ struct TriangleAndIndex
 std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std::vector<Obstacle*>& obstacles);
 
 // Poisson Disk
-void PoissonDisk(std::vector<Vec2>& points, const std::vector<Obstacle*>& obstacles);
+std::vector<Vec2> PoissonDisk(Vec2 startPoint, const std::vector<Obstacle*>& obstacles);
 
 // If we want constraints
 std::vector<Triangle*> ConstrainedDelaunayTriangulation(std::vector<Triangle*>& listOfTriangles, const std::vector<Obstacle*>& obstacles);
@@ -101,3 +101,5 @@ void RemoveTrianglesFromObstacles(std::vector<Obstacle*> obstacles, std::vector<
 std::vector<int> FindSharedEdgeTriangles(const TriEdge& edge, const std::vector<Triangle*>& listOfTriangles);
 
 void HandleOverlapsWithObstacleEdges(std::vector<TriEdge>, std::vector<Triangle*>& listOfTriangles);
+
+std::vector<Triangle*> TriangulatePolygon(std::vector<Vec2>& points);

@@ -26,8 +26,8 @@ void NavigationMesh::Draw(LineRenderer* lines)
 	
 		Vec2 result = t->mPoints[0] + t->mPoints[1] + t->mPoints[2];
 		result /= 3;
-		//TextStream output(lines, Vec2(result.x, result.y), 0.1f, Colour::YELLOW);
-		//output << index;
+		TextStream output(lines, Vec2(result.x, result.y), 0.1f, Colour::YELLOW);
+		output << index;
 		index++;
 	}
 

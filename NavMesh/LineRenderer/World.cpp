@@ -87,6 +87,7 @@ void World::Initialise()
 		}
 	}
 
+	mNavMesh->AddPointList(PoissonDisk(mNavMesh->GetPoints()[0], mObstacles));
 	mNavMesh->Build(mObstacles);
 
 	//// scale points and obstacles to adjust the level size
