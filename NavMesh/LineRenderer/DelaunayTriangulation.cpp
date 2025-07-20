@@ -107,8 +107,9 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 	}
 
 	AssignEdgesAndAdjTris(returnList);
+	//HandleOverlappingEdges(returnList);
 	returnList = ConstrainedDelaunayTriangulation(returnList, obstacles);
-	//RemoveTrianglesFromObstacles(obstacles, returnList);
+	RemoveTrianglesFromObstacles(obstacles, returnList);
 	//RestoreDelauneyness(returnList, points);
 
 	return returnList;
@@ -161,8 +162,6 @@ std::vector<Vec2> PoissonDisk(Vec2 startPoint, const std::vector<Obstacle*>& obs
 
 std::vector<Triangle*> ConstrainedDelaunayTriangulation(std::vector<Triangle*>& listOfTriangles, const std::vector<Obstacle*>& obstacles)
 {
-	HandleOverlappingEdges(listOfTriangles);
-
 	// Construct edges for all the obstacles
 	for (Obstacle* ob : obstacles)
 	{
@@ -171,14 +170,12 @@ std::vector<Triangle*> ConstrainedDelaunayTriangulation(std::vector<Triangle*>& 
 		{
 			constraintEdgeList.push_back(e);
 		}
-
+		
 		for (Triangle* t : listOfTriangles)
 		{
 			ConstructTriangleEdges(t);
 		}
-
 		HandleOverlapsWithObstacleEdges(constraintEdgeList, listOfTriangles, obstacles);
-
 
 
 		//// Construct edges for all the obstacles
@@ -972,6 +969,12 @@ void HandleOverlapsWithObstacleEdges(std::vector<TriEdge> constraintEdges, std::
 		std::vector<Triangle*> overlappingTriangles;
 		for (size_t j = 0; j < listOfTriangles.size(); j++)
 		{
+
+			if (j == 7)
+			{
+				int l = 0;
+			}
+
 			// Check if the points overlap with the edge
 			// Get the vector of the constraint edge
 			for (TriEdge tEdge : listOfTriangles[j]->mEdgeList)
@@ -1002,7 +1005,14 @@ void HandleOverlapsWithObstacleEdges(std::vector<TriEdge> constraintEdges, std::
 						continue;
 					}
 
-					else if (!IsDuplicateTriangle(listOfTriangles[j], overlappingTriangles))
+					// Above results will be true for collinear lines, below cross products check to see if they are not collinear
+					float alt1 = PseudoCross(edgePoint1 - constraintEdges[i].mPoints[0], edgePoint2 - constraintEdges[i].mPoints[0]);
+					float alt2 = PseudoCross(edgePoint1 - constraintEdges[i].mPoints[1], edgePoint2 - constraintEdges[i].mPoints[1]);
+
+					// If both results are 0 then the line is collinear and not crossing
+					if (alt1 == 0 && alt2 == 0) { continue; }
+
+					if (!IsDuplicateTriangle(listOfTriangles[j], overlappingTriangles))
 					{
 						overlappingTriangles.push_back(listOfTriangles[j]);
 						continue;
@@ -1012,49 +1022,49 @@ void HandleOverlapsWithObstacleEdges(std::vector<TriEdge> constraintEdges, std::
 		}
 
 		if (overlappingTriangles.empty()) { continue; }
-
+		
 		std::vector<Vec2> a;
 		std::vector<Vec2> b;
 		Vec2 normal = (constraintEdges[i].mPoints[1] - constraintEdges[i].mPoints[0]).GetRotatedBy270().GetNormalised();
 		Vec2 midPoint = (constraintEdges[i].mPoints[1] + constraintEdges[i].mPoints[0]) * 0.5f;
-
+		
 		for (Vec2 v : constraintEdges[i].mPoints)
 		{
 			a.push_back(v);
 			b.push_back(v);
 		}
-
+		
 		for (Triangle* t : overlappingTriangles)
 		{
 			for (Vec2 point : t->mPoints)
 			{
 				if (point == constraintEdges[i].mPoints[0] || point == constraintEdges[i].mPoints[1]) { continue; }
-
+		
 				float result = Dot(normal, (midPoint - point).Normalise());
 				if (result > 0 && std::find(a.begin(), a.end(), point) == a.end())
 				{
 					a.push_back(point);
 				}
-
+		
 				else if (result < 0 && std::find(b.begin(), b.end(), point) == b.end())
 				{
 					b.push_back(point);
 				}
 			}
-
+		
 			auto it = std::find(listOfTriangles.begin(), listOfTriangles.end(), t);
 			if (it != listOfTriangles.end())
 			{
 				listOfTriangles.erase(it);
 			}
 		}
-
+		
 		std::vector<Obstacle*> obs;
 		for (Triangle* t : DelaunayTriangulate(a, obs))
 		{
 			listOfTriangles.push_back(t);
 		}
-
+		
 		for (Triangle* t : DelaunayTriangulate(b, obs))
 		{
 			listOfTriangles.push_back(t);
