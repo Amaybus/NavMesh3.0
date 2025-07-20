@@ -105,7 +105,7 @@ bool IsPointInConvexObstacle(Vec2 point, std::vector<Obstacle*>& obstacles)
 	return false;
 }
 
-bool IsTriangleInObstacle(Triangle* triangle, std::vector<Obstacle*>& obstacles)
+bool IsTriangleInObstacle(Triangle* triangle, const std::vector<Obstacle*>& obstacles)
 {
 	std::vector<TriEdge> overlappedEdges;
 	Vec2 normals[3];

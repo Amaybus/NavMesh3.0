@@ -108,7 +108,9 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 
 	AssignEdgesAndAdjTris(returnList);
 	returnList = ConstrainedDelaunayTriangulation(returnList, obstacles);
-	RestoreDelauneyness(returnList, points);
+	//RemoveTrianglesFromObstacles(obstacles, returnList);
+	//RestoreDelauneyness(returnList, points);
+
 	return returnList;
 }
 
@@ -160,6 +162,7 @@ std::vector<Vec2> PoissonDisk(Vec2 startPoint, const std::vector<Obstacle*>& obs
 std::vector<Triangle*> ConstrainedDelaunayTriangulation(std::vector<Triangle*>& listOfTriangles, const std::vector<Obstacle*>& obstacles)
 {
 	HandleOverlappingEdges(listOfTriangles);
+
 	// Construct edges for all the obstacles
 	for (Obstacle* ob : obstacles)
 	{
@@ -174,7 +177,7 @@ std::vector<Triangle*> ConstrainedDelaunayTriangulation(std::vector<Triangle*>& 
 			ConstructTriangleEdges(t);
 		}
 
-		HandleOverlapsWithObstacleEdges(constraintEdgeList, listOfTriangles);
+		HandleOverlapsWithObstacleEdges(constraintEdgeList, listOfTriangles, obstacles);
 
 
 
@@ -206,7 +209,6 @@ std::vector<Triangle*> ConstrainedDelaunayTriangulation(std::vector<Triangle*>& 
 		//return listOfTriangles;
 	}
 
-	RemoveTrianglesFromObstacles(obstacles, listOfTriangles);
 	return listOfTriangles;
 }
 
@@ -962,9 +964,8 @@ std::vector<int> FindSharedEdgeTriangles(const TriEdge& edge, const std::vector<
 	return returnInts;
 }
 
-void HandleOverlapsWithObstacleEdges(std::vector<TriEdge> constraintEdges, std::vector<Triangle*>& listOfTriangles)
+void HandleOverlapsWithObstacleEdges(std::vector<TriEdge> constraintEdges, std::vector<Triangle*>& listOfTriangles, const std::vector<Obstacle*>& obstacles)
 {
-
 	// Add each edge to the triangulation 
 	for (size_t i = 0; i < constraintEdges.size(); i++)
 	{
@@ -978,17 +979,33 @@ void HandleOverlapsWithObstacleEdges(std::vector<TriEdge> constraintEdges, std::
 				Vec2 edgePoint1 = tEdge.mPoints[0];
 				Vec2 edgePoint2 = tEdge.mPoints[1];
 
+
+				if (edgePoint1 == constraintEdges[i].mPoints[0] || edgePoint1 == constraintEdges[i].mPoints[1])
+				{
+					if (edgePoint2 == constraintEdges[i].mPoints[0] || edgePoint1 == constraintEdges[i].mPoints[1])
+					{
+						continue;
+					}
+				}
+
 				float result1 = PseudoCross((edgePoint2 - edgePoint1), (constraintEdges[i].mPoints[0] - edgePoint1));
 				float result2 = PseudoCross((edgePoint2 - edgePoint1), (constraintEdges[i].mPoints[1] - edgePoint1));
 
 				float result3 = PseudoCross((constraintEdges[i].mPoints[1] - constraintEdges[i].mPoints[0]), (edgePoint1 - constraintEdges[i].mPoints[0]));
 				float result4 = PseudoCross((constraintEdges[i].mPoints[1] - constraintEdges[i].mPoints[0]), (edgePoint2 - constraintEdges[i].mPoints[0]));
 
-				if (result1 * result2 < 0 && result3 * result4 < 0)
+				if (result1 * result2 <= 0 && result3 * result4 <= 0)
 				{
-					if (!IsDuplicateTriangle(listOfTriangles[j], overlappingTriangles))
+					if (Vector2IsEqual(edgePoint1, constraintEdges[i].mPoints[0]) || Vector2IsEqual(edgePoint1, constraintEdges[i].mPoints[1]) ||
+						Vector2IsEqual(edgePoint2, constraintEdges[i].mPoints[0]) || Vector2IsEqual(edgePoint2, constraintEdges[i].mPoints[1]))
+					{
+						continue;
+					}
+
+					else if (!IsDuplicateTriangle(listOfTriangles[j], overlappingTriangles))
 					{
 						overlappingTriangles.push_back(listOfTriangles[j]);
+						continue;
 					}
 				}
 			}
@@ -1037,7 +1054,7 @@ void HandleOverlapsWithObstacleEdges(std::vector<TriEdge> constraintEdges, std::
 		{
 			listOfTriangles.push_back(t);
 		}
-		
+
 		for (Triangle* t : DelaunayTriangulate(b, obs))
 		{
 			listOfTriangles.push_back(t);

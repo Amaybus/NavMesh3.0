@@ -100,6 +100,6 @@ void RemoveTrianglesFromObstacles(std::vector<Obstacle*> obstacles, std::vector<
 
 std::vector<int> FindSharedEdgeTriangles(const TriEdge& edge, const std::vector<Triangle*>& listOfTriangles);
 
-void HandleOverlapsWithObstacleEdges(std::vector<TriEdge>, std::vector<Triangle*>& listOfTriangles);
+void HandleOverlapsWithObstacleEdges(std::vector<TriEdge>, std::vector<Triangle*>& listOfTriangles, const std::vector<Obstacle*>& obstacles);
 
 std::vector<Triangle*> TriangulatePolygon(std::vector<Vec2>& points);
