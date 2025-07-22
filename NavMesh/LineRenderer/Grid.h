@@ -6,8 +6,7 @@
 enum class TileType
 {
 	EMPTY = 0xFFFFFF,
-	OBSTACLE = 0x0000FF,
-	OUTSIDE = 0x000000
+	OBSTACLE = 0x000000,
 };
 
 class Grid

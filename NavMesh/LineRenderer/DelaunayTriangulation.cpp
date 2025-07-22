@@ -10,7 +10,6 @@
 
 std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std::vector<Obstacle*>& obstacles)
 {
-
 	for (Obstacle* ob : obstacles)
 	{
 		for (Vec2 v : ob->GetPoints())
@@ -107,7 +106,6 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 	}
 
 	AssignEdgesAndAdjTris(returnList);
-	//HandleOverlappingEdges(returnList);
 	returnList = ConstrainedDelaunayTriangulation(returnList, obstacles);
 	RemoveTrianglesFromObstacles(obstacles, returnList);
 	//RestoreDelauneyness(returnList, points);
@@ -176,34 +174,6 @@ std::vector<Triangle*> ConstrainedDelaunayTriangulation(std::vector<Triangle*>& 
 			ConstructTriangleEdges(t);
 		}
 		HandleOverlapsWithObstacleEdges(constraintEdgeList, listOfTriangles, obstacles);
-
-
-		//// Construct edges for all the obstacles
-		//std::vector<TriEdge> constraintEdgeList;
-		//for (Obstacle* ob : obstacles)
-		//{
-		//	for (TriEdge e : ConstructObstacleEdges(ob))
-		//	{
-		//		constraintEdgeList.push_back(e);
-		//	}
-		//
-		//	HandleOverlappingEdges(listOfTriangles);
-		//	// Find all overlapping edges
-		//	std::vector<TriEdge> overlappingEdges = FindOverlapsWithConstraints(constraintEdgeList, listOfTriangles);
-		//
-		//	// Adjust the edges so the are no longer overlapping
-		//	HandleOverlapsWithConstraints(overlappingEdges, constraintEdgeList, listOfTriangles);
-		//}
-		//
-		//for (Triangle* t : listOfTriangles)
-		//{
-		//	ConstructTriangleEdges(t);
-		//}
-		//
-		//HandleOverlappingEdges(listOfTriangles);
-		//RemoveTrianglesFromObstacles(obstacles, listOfTriangles);
-		//
-		//return listOfTriangles;
 	}
 
 	return listOfTriangles;
