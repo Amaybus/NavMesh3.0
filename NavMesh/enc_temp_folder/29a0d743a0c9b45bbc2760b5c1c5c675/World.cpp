@@ -44,7 +44,6 @@ void World::Initialise()
 	NavigationMesh* navMesh = new NavigationMesh();
 	mNavMesh = navMesh;
 
-	// Border 
 	mNavMesh->AddPoint(Vec2(0, level.GetHeight()));
 	mNavMesh->AddPoint(Vec2(level.GetWidth(), level.GetHeight()));
 	mNavMesh->AddPoint(Vec2(level.GetWidth(), 0));
@@ -56,7 +55,23 @@ void World::Initialise()
 	{
 		for (int x = 0; x < level.GetWidth(); x++)
 		{
-
+			// Ignore outside tiles and empty tiles if the inside has been traced already
+			if (level.At(x, y) == TileType::OUTSIDE || (level.At(x, y) == TileType::EMPTY && isInnerRegionDefined))
+			{
+				continue;
+			}
+	
+			//// Start defining the inner region
+			//if (level.At(x, y) == TileType::EMPTY && !isInnerRegionDefined)
+			//{
+			//	std::vector<Vec2> navPoints = LineTrace(Vec2(x+0.5f, y+0.5f), level, TileType::EMPTY);
+			//
+			//	mNavMesh->AddPointList(navPoints);
+			//
+			//	isInnerRegionDefined = true;
+			//	continue;
+			//}
+	
 			// Define obstacle regions
 			if (level.At(x, y) == TileType::OBSTACLE)
 			{
