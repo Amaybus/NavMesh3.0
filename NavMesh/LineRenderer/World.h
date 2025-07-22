@@ -26,7 +26,6 @@ class World : public Application
 	NavigationMesh* mNavMesh = nullptr;
 	std::vector<Obstacle*> mObstacles;
 	std::vector<PathAgent*> mPathAgents;
-	std::vector<Vec2> debugpoints;
 
 public:
 	World();
