@@ -27,6 +27,16 @@ class World : public Application
 	std::vector<Obstacle*> mObstacles;
 	std::vector<PathAgent*> mPathAgents;
 
+	// IMGUI DEBUG
+	bool bShowCircumcircle;
+	bool bShowSingleNodeConnections;
+	bool bShowAllNodeConnections;
+	bool bShowAgentPaths;
+	int mNodeIndex = 0;
+	int mTriangleIndex = 0;
+	int mAgentIndex = 0;
+	int mNumberOfAgents = 0;
+
 public:
 	World();
 	~World();
@@ -42,7 +52,5 @@ public:
 	std::vector<Obstacle*>& GetObstacles() { return mObstacles; }
 
 	void DrawCircumcircles(LineRenderer* lines);
-
-	int mTriangleIndex = 0;
 };
 

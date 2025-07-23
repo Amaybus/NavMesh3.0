@@ -6,7 +6,7 @@
 #include "TextStream.h"
 #include "LineRenderer.h"
 
-PathAgent::PathAgent(NodeGraph* nodeGraph, float width) : mNodeGraph(nodeGraph), mRadius(width)
+PathAgent::PathAgent(NodeGraph* nodeGraph, float width, Colour colour) : mNodeGraph(nodeGraph), mRadius(width), mColour(colour)
 {
 	mCurrentNode = mNodeGraph->GetNodeAt(0);
 	mPosition = mCurrentNode->mPosition;

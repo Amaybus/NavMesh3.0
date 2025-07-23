@@ -1035,3 +1035,18 @@ void HandleOverlapsWithObstacleEdges(std::vector<TriEdge> constraintEdges, std::
 		}
 	}
 }
+
+Triangle* FindAdjacentTriangleToEdge(int currentTriangleIndex, const std::vector<Vec2>& edge, const std::vector<Triangle*>& triangleList)
+{
+	for (int i = 0; i < triangleList.size(); i++)
+	{
+		if (i == currentTriangleIndex) { continue; }
+
+		if (std::find(std::begin(triangleList[i]->mPoints), std::end(triangleList[i]->mPoints), edge[0]) != std::end(triangleList[i]->mPoints) && std::find(std::begin(triangleList[i]->mPoints), std::end(triangleList[i]->mPoints), edge[1]) != std::end(triangleList[i]->mPoints))
+		{
+			return triangleList[i];
+		}
+	}
+
+	return nullptr;
+}

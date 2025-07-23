@@ -21,7 +21,7 @@ struct Node
 	// Connections will be the triangles that share an edge
 	std::vector<Edge> mConnections;
 
-	Triangle& mTriangle;
+	Triangle* mTriangle;
 
 	// Used in pathfinding calculations
 	Node* mPrevious = nullptr;
@@ -33,8 +33,8 @@ struct Node
 	// F = G + H
 	float fScore = 0;
 
-	Node(Vec2 position, Triangle& triangle) : mPosition(position), mTriangle(triangle) {}
-	Node(float xPos, float yPos, Triangle& triangle) : mPosition(Vec2(xPos, yPos)), mTriangle(triangle) {}
+	Node(Vec2 position, Triangle* triangle) : mPosition(position), mTriangle(triangle) {}
+	Node(float xPos, float yPos, Triangle* triangle) : mPosition(Vec2(xPos, yPos)), mTriangle(triangle) {}
 
 	void ConnectToNode(Node* other, float cost) { mConnections.push_back(Edge(other, cost)); }
 	std::vector<Edge>& GetConnections() { return mConnections; }

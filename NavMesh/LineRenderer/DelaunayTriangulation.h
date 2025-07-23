@@ -102,3 +102,4 @@ std::vector<int> FindSharedEdgeTriangles(const TriEdge& edge, const std::vector<
 
 void HandleOverlapsWithObstacleEdges(std::vector<TriEdge>, std::vector<Triangle*>& listOfTriangles, const std::vector<Obstacle*>& obstacles);
 
+Triangle* FindAdjacentTriangleToEdge(int currentTriangleIndex, const std::vector<Vec2>& edge, const std::vector<Triangle*>& triangleList);

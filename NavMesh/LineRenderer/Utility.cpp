@@ -207,3 +207,11 @@ std::vector<Vec2> AddBufferToObstacles(std::vector<Obstacle*>& obstacles)
 	return returnPoints;
 }
 
+Vec2 GetTriangleCentre(Triangle*& triangle)
+{
+	// Average the points location
+	float centerX = (triangle->mPoints[0].x + triangle->mPoints[1].x + triangle->mPoints[2].x) / 3;
+	float centerY = (triangle->mPoints[0].y + triangle->mPoints[1].y + triangle->mPoints[2].y) / 3;
+
+	return Vec2{ centerX, centerY };
+}

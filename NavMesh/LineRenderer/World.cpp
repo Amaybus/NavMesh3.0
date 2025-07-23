@@ -5,6 +5,7 @@
 #include "ImGui.h"
 #include "Key.h"
 #include <algorithm>
+#include "PathAgent.h"
 #include "DelaunayTriangulation.h"
 
 World::World()
@@ -45,11 +46,11 @@ void World::Initialise()
 	mNavMesh = navMesh;
 
 	// Border 
-	mNavMesh->AddPoint(Vec2(-0.5, level.GetHeight()-0.5));
-	mNavMesh->AddPoint(Vec2(level.GetWidth() -0.5f, level.GetHeight()-0.5f));
-	mNavMesh->AddPoint(Vec2(level.GetWidth()-0.5f, -0.5f));
+	mNavMesh->AddPoint(Vec2(-0.5, level.GetHeight() - 0.5));
+	mNavMesh->AddPoint(Vec2(level.GetWidth() - 0.5f, level.GetHeight() - 0.5f));
+	mNavMesh->AddPoint(Vec2(level.GetWidth() - 0.5f, -0.5f));
 	mNavMesh->AddPoint(Vec2(-0.5f, -0.5f));
-	
+
 	// Init the level
 	for (int y = 0; y < level.GetHeight(); y++)
 	{
@@ -60,18 +61,17 @@ void World::Initialise()
 			{
 				// Skip any tiles which are already in an obstacle
 				if (IsPointInObstacle(Vec2(x, y), mObstacles, level.GetWidth())) { continue; }
-	
+
 				std::vector<Vec2> obPoints = LineTrace(Vec2(x, y), level, TileType::OBSTACLE);
-	
+
 				Obstacle* ob = new Obstacle(obPoints);
 				mObstacles.push_back(ob);
-	
+
 				continue;
 			}
 		}
 	}
 
-	//mNavMesh->AddPointList(PoissonDisk(mNavMesh->GetPoints()[0], mObstacles));
 	mNavMesh->Build(mObstacles);
 
 	// scale points and obstacles to adjust the level size
@@ -83,12 +83,12 @@ void World::Initialise()
 			v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
 		}
 	}
-	
+
 	for (Vec2& v : mNavMesh->GetPoints())
 	{
 		v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
 	}
-	
+
 	for (Triangle* t : mNavMesh->GetTriangles())
 	{
 		for (Vec2& v : t->mPoints)
@@ -96,6 +96,9 @@ void World::Initialise()
 			v = Vec2((v.x - (level.GetWidth() * 0.5f)), -(v.y - (level.GetHeight() * 0.5f))) * level.GetCellSize();
 		}
 	}
+
+	// Construct node graph using the navmesh
+	mNodeGraph = new NodeGraph(mNavMesh);
 }
 
 void World::Update(float delta)
@@ -106,9 +109,61 @@ void World::Update(float delta)
 	{
 		if (ImGui::CollapsingHeader("CIRCUMCIRLCE"))
 		{
-			ImGui::SliderInt("Triangle Index", &mTriangleIndex, 0, (int)mNavMesh->GetNumberOfTriangles() - 1);
+			ImGui::Checkbox("Show circumcircle", &bShowCircumcircle);
+
+			if (bShowCircumcircle)
+			{
+				ImGui::SliderInt("Triangle Index", &mTriangleIndex, 0, (int)mNavMesh->GetNumberOfTriangles() - 1);
+			}
 		}
 	}
+	
+	//if (ImGui::CollapsingHeader("NAVMESH"))
+	//{
+	//	ImGui::Checkbox("Show triangles", &mNavMesh->bShowTriangles);
+	//	ImGui::Checkbox("Show triangle index", &mNavMesh->bShowTriangleNumbers);
+	//	ImGui::Checkbox("Show points", &mNavMesh->bShowPoints);
+	//	ImGui::Checkbox("Show point position", &mNavMesh->bShowPointPositionValue);
+	//}
+
+	if (ImGui::CollapsingHeader("AGENT GENERATION"))
+	{
+		if (ImGui::Button("Add Agent", ImVec2(100, 20)))
+		{
+			PathAgent* agent = new PathAgent(mNodeGraph, 300.0f, Colour::BLUE);
+			mPathAgents.push_back(agent);
+		}
+
+		//for (int i = 0; i < mNumberOfAgents; i++)
+		//{
+		//	ImGui::PushID(i);
+		//	ImGui::InputFloat("Speed", &mAgentSpeeds[i]);
+		//	ImGui::SameLine();
+		//	const char* Colours[] = { "CYAN", "BLUE", "YELLOW", "ORANGE", "MAGENTA" };
+		//	ImGui::Combo("Colour", &mItems[i], Colours, IM_ARRAYSIZE(Colours));
+		//	mAgentColours[i] = Colours[mItems[i]];
+		//	ImGui::PopID();
+		//}
+	}
+
+	if (ImGui::CollapsingHeader("PATHFINDING"))
+	{
+		ImGui::Checkbox("Show single node connections", &bShowSingleNodeConnections);
+		ImGui::Checkbox("Show all node connections", &bShowAllNodeConnections);
+		ImGui::Checkbox("Show agent paths", &bShowAgentPaths);
+
+		if (bShowAgentPaths && mNumberOfAgents > 0)
+		{
+			ImGui::SliderInt("Node Index", &mAgentIndex, 0, mNumberOfAgents - 1);
+		}
+
+		if (bShowSingleNodeConnections && mNodeGraph)
+		{
+			bShowAllNodeConnections = false;
+			ImGui::SliderInt("Node Index", &mNodeIndex, 0, mNodeGraph->GetNodeListSize() - 1);
+		}
+	}
+
 	ImGui::End();
 }
 
@@ -129,7 +184,10 @@ void World::Draw(LineRenderer* lines)
 		ob->Draw(lines);
 	}
 
-	DrawCircumcircles(lines);
+	if (bShowCircumcircle)
+	{
+		DrawCircumcircles(lines);
+	}
 }
 
 
@@ -246,52 +304,52 @@ Vec2 World::SwitchDirection(int moveDirIdex)
 
 void World::DrawCircumcircles(LineRenderer* lines)
 {
-		Triangle* tri = mNavMesh->GetTriangleAtIndex(mTriangleIndex);
-	
-		Vec2 a = tri->mPoints[0];
-		Vec2 b = tri->mPoints[1];
-		Vec2 c = tri->mPoints[2];
+	Triangle* tri = mNavMesh->GetTriangleAtIndex(mTriangleIndex);
 
-		float d = 2 * ((a.x * (b.y - c.y)) + (b.x * (c.y - a.y)) + (c.x * (a.y - b.y)));
-		float x = ((((a.x * a.x) + (a.y * a.y)) * (b.y - c.y)) + ((b.x * b.x + b.y * b.y) * (c.y - a.y)) + (((c.x * c.x) + (c.y * c.y)) * (a.y - b.y))) / d;
-		float y = (((a.x * a.x + a.y * a.y) * (c.x - b.x)) + ((b.x * b.x + b.y * b.y) * (a.x - c.x)) + ((c.x * c.x + c.y * c.y) * (b.x - a.x))) / d;
+	Vec2 a = tri->mPoints[0];
+	Vec2 b = tri->mPoints[1];
+	Vec2 c = tri->mPoints[2];
 
-		Vec2 circumcenter = Vec2{ x,y };
+	float d = 2 * ((a.x * (b.y - c.y)) + (b.x * (c.y - a.y)) + (c.x * (a.y - b.y)));
+	float x = ((((a.x * a.x) + (a.y * a.y)) * (b.y - c.y)) + ((b.x * b.x + b.y * b.y) * (c.y - a.y)) + (((c.x * c.x) + (c.y * c.y)) * (a.y - b.y))) / d;
+	float y = (((a.x * a.x + a.y * a.y) * (c.x - b.x)) + ((b.x * b.x + b.y * b.y) * (a.x - c.x)) + ((c.x * c.x + c.y * c.y) * (b.x - a.x))) / d;
 
-		// Get lengths of each side
-		float ab = (tri->mPoints[1] - tri->mPoints[0]).GetMagnitude();
-		float bc = (tri->mPoints[2] - tri->mPoints[1]).GetMagnitude();
-		float ca = (tri->mPoints[0] - tri->mPoints[2]).GetMagnitude();
+	Vec2 circumcenter = Vec2{ x,y };
 
-		// Triangles half perimeter
-		float s = (ab + bc + ca) * 0.5f;
+	// Get lengths of each side
+	float ab = (tri->mPoints[1] - tri->mPoints[0]).GetMagnitude();
+	float bc = (tri->mPoints[2] - tri->mPoints[1]).GetMagnitude();
+	float ca = (tri->mPoints[0] - tri->mPoints[2]).GetMagnitude();
 
-		// Find area using Heron's formula
-		float area = (float)sqrt((s * (s - ab) * (s - bc) * (s - ca)));
+	// Triangles half perimeter
+	float s = (ab + bc + ca) * 0.5f;
 
-		// Find the radius of the circumcircle
-		float radius = (ab * bc * ca) / (4 * area);
+	// Find area using Heron's formula
+	float area = (float)sqrt((s * (s - ab) * (s - bc) * (s - ca)));
 
-
-		lines->DrawCircle(circumcenter, radius, Colour::MAGENTA);
-		lines->DrawCircle(a,0.1f, Colour::RED);
-		lines->DrawCircle(b,0.1f, Colour::RED);
-		lines->DrawCircle(c,0.1f, Colour::RED);
+	// Find the radius of the circumcircle
+	float radius = (ab * bc * ca) / (4 * area);
 
 
-		Vec2 normals[3];
-		normals[0] = (tri->mEdgeList[0].mPoints[0] - tri->mEdgeList[0].mPoints[1]).GetRotatedBy270().GetNormalised();
-		normals[1] = (tri->mEdgeList[1].mPoints[0] - tri->mEdgeList[1].mPoints[1]).GetRotatedBy270().GetNormalised();
-		normals[2] = (tri->mEdgeList[2].mPoints[0] - tri->mEdgeList[2].mPoints[1]).GetRotatedBy270().GetNormalised();
+	lines->DrawCircle(circumcenter, radius, Colour::MAGENTA);
+	lines->DrawCircle(a, 0.1f, Colour::RED);
+	lines->DrawCircle(b, 0.1f, Colour::RED);
+	lines->DrawCircle(c, 0.1f, Colour::RED);
 
-		Vec2 edgeMidPoints[3];
-		edgeMidPoints[0] = ((tri->mEdgeList[0].mPoints[0] * 1.22) + tri->mEdgeList[0].mPoints[1]) / 2.22;
-		edgeMidPoints[1] = ((tri->mEdgeList[1].mPoints[0] * 1.22) + tri->mEdgeList[1].mPoints[1]) / 2.22;
-		edgeMidPoints[2] = ((tri->mEdgeList[2].mPoints[0] * 1.22) + tri->mEdgeList[2].mPoints[1]) / 2.22;
 
-		for (int i = 0; i < 3; i++)
-		{
-			lines->DrawLineWithArrow(edgeMidPoints[i] - (normals[i] * 0.01), edgeMidPoints[i] + normals[i] * 2, Colour::MAGENTA, 0.1f);
-		}
+	Vec2 normals[3];
+	normals[0] = (tri->mEdgeList[0].mPoints[0] - tri->mEdgeList[0].mPoints[1]).GetRotatedBy270().GetNormalised();
+	normals[1] = (tri->mEdgeList[1].mPoints[0] - tri->mEdgeList[1].mPoints[1]).GetRotatedBy270().GetNormalised();
+	normals[2] = (tri->mEdgeList[2].mPoints[0] - tri->mEdgeList[2].mPoints[1]).GetRotatedBy270().GetNormalised();
+
+	Vec2 edgeMidPoints[3];
+	edgeMidPoints[0] = ((tri->mEdgeList[0].mPoints[0] * 1.22) + tri->mEdgeList[0].mPoints[1]) / 2.22;
+	edgeMidPoints[1] = ((tri->mEdgeList[1].mPoints[0] * 1.22) + tri->mEdgeList[1].mPoints[1]) / 2.22;
+	edgeMidPoints[2] = ((tri->mEdgeList[2].mPoints[0] * 1.22) + tri->mEdgeList[2].mPoints[1]) / 2.22;
+
+	for (int i = 0; i < 3; i++)
+	{
+		lines->DrawLineWithArrow(edgeMidPoints[i] - (normals[i] * 0.01), edgeMidPoints[i] + normals[i] * 2, Colour::MAGENTA, 0.1f);
+	}
 }
 

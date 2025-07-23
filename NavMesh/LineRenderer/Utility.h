@@ -17,3 +17,5 @@ bool IsPointInConvexObstacle(Vec2 point, std::vector<Obstacle*>& obstacles);
 bool IsTriangleInObstacle(Triangle* triangle, const std::vector<Obstacle*>& obstacles);
 std::vector<TriEdge> ConstructObstacleEdges(Obstacle* ob);
 std::vector<Vec2> AddBufferToObstacles(std::vector<Obstacle*>& obstacles);
+
+Vec2 GetTriangleCentre(Triangle*& triangle);

@@ -28,7 +28,7 @@ class PathAgent
 	std::vector<Vec2> portalRight;
 
 public:
-	PathAgent(NodeGraph* nodeGraph, float width);
+	PathAgent(NodeGraph* nodeGraph, float width, Colour colour);
 
 	void Update(float deltaTime);
 	void Draw(LineRenderer* lines);
