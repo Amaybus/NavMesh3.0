@@ -45,18 +45,16 @@ void World::Initialise()
 	mNavMesh = navMesh;
 
 	// Border 
-	mNavMesh->AddPoint(Vec2(0, level.GetHeight()));
-	mNavMesh->AddPoint(Vec2(level.GetWidth(), level.GetHeight()));
-	mNavMesh->AddPoint(Vec2(level.GetWidth(), 0));
-	mNavMesh->AddPoint(Vec2());
+	mNavMesh->AddPoint(Vec2(-0.5, level.GetHeight()-0.5));
+	mNavMesh->AddPoint(Vec2(level.GetWidth() -0.5f, level.GetHeight()-0.5f));
+	mNavMesh->AddPoint(Vec2(level.GetWidth()-0.5f, -0.5f));
+	mNavMesh->AddPoint(Vec2(-0.5f, -0.5f));
 	
 	// Init the level
-	bool isInnerRegionDefined = false;
 	for (int y = 0; y < level.GetHeight(); y++)
 	{
 		for (int x = 0; x < level.GetWidth(); x++)
 		{
-
 			// Define obstacle regions
 			if (level.At(x, y) == TileType::OBSTACLE)
 			{
@@ -167,7 +165,7 @@ std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid, TileType tileType)
 
 			if (Vector2IsEqual(currentPos + primDir, startPos))
 			{
-				return returnPoints;
+				break;
 			}
 
 			// Only move forward if it is available to us

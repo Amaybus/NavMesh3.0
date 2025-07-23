@@ -108,7 +108,7 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 	AssignEdgesAndAdjTris(returnList);
 	returnList = ConstrainedDelaunayTriangulation(returnList, obstacles);
 	RemoveTrianglesFromObstacles(obstacles, returnList);
-	//RestoreDelauneyness(returnList, points);
+	RestoreDelauneyness(returnList, points);
 
 	return returnList;
 }
@@ -939,12 +939,6 @@ void HandleOverlapsWithObstacleEdges(std::vector<TriEdge> constraintEdges, std::
 		std::vector<Triangle*> overlappingTriangles;
 		for (size_t j = 0; j < listOfTriangles.size(); j++)
 		{
-
-			if (j == 7)
-			{
-				int l = 0;
-			}
-
 			// Check if the points overlap with the edge
 			// Get the vector of the constraint edge
 			for (TriEdge tEdge : listOfTriangles[j]->mEdgeList)
@@ -1041,69 +1035,3 @@ void HandleOverlapsWithObstacleEdges(std::vector<TriEdge> constraintEdges, std::
 		}
 	}
 }
-
-std::vector<Triangle*> TriangulatePolygon(std::vector<Vec2>& points)
-{
-	std::vector<Triangle*> triangles;
-
-	Vec2 previous;
-	Vec2 next;
-
-	bool validTriangle = true;
-
-	int i = 0;
-
-	// If there is no points to work with, return false
-	if (points.size() <= 0) { return triangles; }
-
-	// If we have 3 points left, then we can make a triangle out of those last points and stop looping
-	while (points.size() >= 3)
-	{
-		// Set previous & next points (list made circular)
-		if (i == 0) { previous = points[points.size() - 1]; }
-		else { previous = points[i - 1]; }
-
-		if (i == points.size() - 1) { next = points[0]; }
-		else { next = points[i + 1]; }
-
-		// Move to next point in the list if current point is concave
-		if (FindAngle(points[i], next, previous) > 180) { continue; }
-
-		// Check if any points are inside the triangle
-		for (int j = 0; j < points.size(); j++)
-		{
-			// Skip checking any of the current points we are using for the triangle
-			if (Vector2IsEqual(points[i], points[j]) || Vector2IsEqual(next, points[j]) || Vector2IsEqual(previous, points[j])) { continue; }
-
-			// Check if the point falls in the triangle
-			if (PointInTriangle(points[j], points[i], next, previous))
-			{
-				validTriangle = false;
-				// Increment i to check the next point in the list
-				i++;
-				break;
-			}
-		}
-
-		if (validTriangle)
-		{
-			Triangle* triangleToAdd = new Triangle;
-			triangleToAdd->mPoints[0] = previous;
-			triangleToAdd->mPoints[1] = points[i];
-			triangleToAdd->mPoints[2] = next;
-
-			// Add triangle to list
-			triangles.push_back(triangleToAdd);
-
-			// remove checked element from point list
-			points.erase(points.begin() + i);
-			i = 0;
-		}
-
-		// Reset bool
-		else validTriangle = true;
-	}
-
-	return triangles;
-}
-
