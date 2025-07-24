@@ -19,3 +19,6 @@ std::vector<TriEdge> ConstructObstacleEdges(Obstacle* ob);
 std::vector<Vec2> AddBufferToObstacles(std::vector<Obstacle*>& obstacles);
 
 Vec2 GetTriangleCentre(Triangle*& triangle);
+
+std::vector<Vec2> FindTwoCommonVerts(Triangle*& tri1, Triangle*& tri2);
+bool DoLinesIntersect(Vec2 startPos, Vec2 endPos, const std::vector<Obstacle*>& obstacles);

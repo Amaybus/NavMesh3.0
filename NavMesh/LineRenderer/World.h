@@ -46,6 +46,7 @@ public:
 	void Initialise() override;
 	void Update(float delta) override;
 	void Draw(LineRenderer* lines);
+	void OnLeftClick() override;
 
 	std::vector<Vec2> LineTrace(Vec2 startPos, Grid& grid, TileType tileType);
 	Vec2 SwitchDirection(int moveDirIdex);

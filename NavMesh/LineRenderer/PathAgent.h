@@ -13,12 +13,13 @@ class LineRenderer;
 class PathAgent
 {
 	Vec2 mPosition;
-	float mSpeed = 50;
+	float mSpeed = 1000;
 	Node* mCurrentNode;
 	NodeGraph* mNodeGraph;
 	World* mCurrentWorld;
 	std::vector<Node*> mNodePath;
 	std::vector<Vec2> mPointPath;
+
 	Colour mColour;
 	int mCurrentIndex;
 	float mRadius = 0;
@@ -27,8 +28,9 @@ class PathAgent
 	std::vector<Vec2> portalLeft;
 	std::vector<Vec2> portalRight;
 
+
 public:
-	PathAgent(NodeGraph* nodeGraph, float width, Colour colour);
+	PathAgent(NodeGraph* nodeGraph, float width, Colour colour, World* world);
 
 	void Update(float deltaTime);
 	void Draw(LineRenderer* lines);
@@ -50,5 +52,8 @@ public:
 	void AddPortalLeft(Vec2 portal) { portalLeft.push_back(portal); }
 	void AddPortalRight(Vec2 portal) { portalRight.push_back(portal); }
 	void ClearPortals() { portalLeft.clear(); portalRight.clear(); }
+	World* GetWorld() { return mCurrentWorld; }
+	std::vector<std::vector<Vec2>> pathedges;
+
 };
 

@@ -54,32 +54,31 @@ void NodeGraph::ConstructNodeNeighbours(std::vector<Triangle*>& triangleList)
 
 Node* NodeGraph::GetClosestNode(Vec2 pos)
 {
-	//float closestDistance = FLT_MAX;
-	//std::vector<Triangle> triList = mNavMesh->GetTriangleList();
-	//int triIndex = 0;
-	//
-	//for (int i = 0; i < triList.size(); i++)
-	//{
-	//	float result = (GetTriangleCentre(triList[i]) - pos).GetMagnitude();
-	//	if (result < closestDistance)
-	//	{
-	//		closestDistance = result;
-	//		triIndex = i;
-	//	}
-	//}
-	//
-	//return GetNodeAt(triIndex);
-	return nullptr;
+	float closestDistance = FLT_MAX;
+	std::vector<Triangle*> triList = mNavMesh->GetTriangles();
+	int triIndex = 0;
+	
+	for (int i = 0; i < triList.size(); i++)
+	{
+		float result = (GetTriangleCentre(triList[i]) - pos).GetMagnitude();
+		if (result < closestDistance)
+		{
+			closestDistance = result;
+			triIndex = i;
+		}
+	}
+	
+	return GetNodeAt(triIndex);
 }
 
 Node* NodeGraph::GetNode(Vec2 pos) 
 {
-	//for(Node* n : mNodes)
-	//{
-	//	if(n->mPosition == pos)
-	//	{
-	//		return n;
-	//	}
-	//}
+	for(Node* n : mNodes)
+	{
+		if(n->mPosition == pos)
+		{
+			return n;
+		}
+	}
 	return nullptr;
 }

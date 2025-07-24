@@ -130,20 +130,9 @@ void World::Update(float delta)
 	{
 		if (ImGui::Button("Add Agent", ImVec2(100, 20)))
 		{
-			PathAgent* agent = new PathAgent(mNodeGraph, 300.0f, Colour::BLUE);
+			PathAgent* agent = new PathAgent(mNodeGraph, 300.0f, Colour::BLUE, this);
 			mPathAgents.push_back(agent);
 		}
-
-		//for (int i = 0; i < mNumberOfAgents; i++)
-		//{
-		//	ImGui::PushID(i);
-		//	ImGui::InputFloat("Speed", &mAgentSpeeds[i]);
-		//	ImGui::SameLine();
-		//	const char* Colours[] = { "CYAN", "BLUE", "YELLOW", "ORANGE", "MAGENTA" };
-		//	ImGui::Combo("Colour", &mItems[i], Colours, IM_ARRAYSIZE(Colours));
-		//	mAgentColours[i] = Colours[mItems[i]];
-		//	ImGui::PopID();
-		//}
 	}
 
 	if (ImGui::CollapsingHeader("PATHFINDING"))
@@ -165,6 +154,11 @@ void World::Update(float delta)
 	}
 
 	ImGui::End();
+
+	for (PathAgent* agents : mPathAgents)
+	{
+		agents->Update(delta);
+	}
 }
 
 void World::Draw(LineRenderer* lines)
@@ -187,6 +181,26 @@ void World::Draw(LineRenderer* lines)
 	if (bShowCircumcircle)
 	{
 		DrawCircumcircles(lines);
+	}
+
+	if (bShowAllNodeConnections)
+	{
+		for (Node* n : mNodeGraph->GetNodeList())
+		{
+			for (Edge e : n->mConnections)
+			{
+				lines->DrawLineWithArrow(n->mPosition, e.mTarget->mPosition, Colour::BLUE.Lighten(), 100);
+			}
+		}
+	}
+
+	if (bShowSingleNodeConnections)
+	{
+		Node* node = mNodeGraph->GetNodeAt(mNodeIndex);
+		for (Edge e : node->GetConnections())
+		{
+			lines->DrawLineWithArrow(node->mPosition, e.mTarget->mPosition, Colour::BLUE.Lighten(), 100);
+		}
 	}
 }
 
@@ -353,3 +367,8 @@ void World::DrawCircumcircles(LineRenderer* lines)
 	}
 }
 
+void World::OnLeftClick()
+{
+	if (mPathAgents.empty()) { return; }
+	mPathAgents[mAgentIndex]->GoTo(cursorPos);
+}

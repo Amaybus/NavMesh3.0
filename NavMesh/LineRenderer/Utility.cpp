@@ -114,9 +114,9 @@ bool IsTriangleInObstacle(Triangle* triangle, const std::vector<Obstacle*>& obst
 	normals[2] = (triangle->mEdgeList[2].mPoints[0] - triangle->mEdgeList[2].mPoints[1]).GetRotatedBy270().GetNormalised();
 
 	Vec2 edgeMidPoints[3];
-	edgeMidPoints[0] =((triangle->mEdgeList[0].mPoints[0] * 1.22) + triangle->mEdgeList[0].mPoints[1]) / 2.22;
-	edgeMidPoints[1] =((triangle->mEdgeList[1].mPoints[0] * 1.22) + triangle->mEdgeList[1].mPoints[1]) / 2.22;
-	edgeMidPoints[2] =((triangle->mEdgeList[2].mPoints[0] * 1.22) + triangle->mEdgeList[2].mPoints[1]) / 2.22;
+	edgeMidPoints[0] = ((triangle->mEdgeList[0].mPoints[0] * 1.22) + triangle->mEdgeList[0].mPoints[1]) / 2.22;
+	edgeMidPoints[1] = ((triangle->mEdgeList[1].mPoints[0] * 1.22) + triangle->mEdgeList[1].mPoints[1]) / 2.22;
+	edgeMidPoints[2] = ((triangle->mEdgeList[2].mPoints[0] * 1.22) + triangle->mEdgeList[2].mPoints[1]) / 2.22;
 
 	int count = 0;
 
@@ -214,4 +214,60 @@ Vec2 GetTriangleCentre(Triangle*& triangle)
 	float centerY = (triangle->mPoints[0].y + triangle->mPoints[1].y + triangle->mPoints[2].y) / 3;
 
 	return Vec2{ centerX, centerY };
+}
+
+std::vector<Vec2> FindTwoCommonVerts(Triangle*& tri1, Triangle*& tri2)
+{
+	int index = 0;
+
+	for (int i = 0; i < 3; i++)
+	{
+		if (std::find(std::begin(tri2->mPoints), std::end(tri2->mPoints), tri1->mPoints[i]) == std::end(tri2->mPoints))
+		{
+			index = i;
+		}
+	}
+
+	std::vector<Vec2> returnList;
+	for (int i = 0; i < 3; i++)
+	{
+		if (i == index) { continue; }
+		returnList.push_back(tri1->mPoints[i]);
+	}
+	return returnList;
+}
+
+bool DoLinesIntersect(Vec2 startPos, Vec2 endPos, const std::vector<Obstacle*>& obstacles)
+{
+	std::vector<std::vector<Vec2>> constraintEdgeList;
+	for (Obstacle* ob : obstacles)
+	{
+		std::vector<Vec2> convexHull = ob->GetPoints();
+		Vec2 next;
+		for (size_t i = 0; i < convexHull.size(); i++)
+		{
+			if (i == convexHull.size() - 1) { next = convexHull[0]; }
+			else (next = convexHull[i + 1]);
+
+			std::vector<Vec2> tempList;
+			tempList.push_back(convexHull[i]);
+			tempList.push_back(next);
+			constraintEdgeList.push_back(tempList);
+		}
+	}
+
+	for (int i = 0; i < constraintEdgeList.size(); i++)
+	{
+		float oa = PseudoCross(endPos - startPos, constraintEdgeList[i][0] - endPos);
+		float ob = PseudoCross(endPos - startPos, constraintEdgeList[i][1] - endPos);
+		float oc = PseudoCross(constraintEdgeList[i][1] - constraintEdgeList[i][0], startPos - constraintEdgeList[i][0]);
+		float od = PseudoCross(constraintEdgeList[i][1] - constraintEdgeList[i][0], endPos - constraintEdgeList[i][0]);
+
+		if (oa * ob < 0 && oc * od < 0)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }

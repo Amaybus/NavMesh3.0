@@ -6,7 +6,7 @@
 #include "TextStream.h"
 #include "LineRenderer.h"
 
-PathAgent::PathAgent(NodeGraph* nodeGraph, float width, Colour colour) : mNodeGraph(nodeGraph), mRadius(width), mColour(colour)
+PathAgent::PathAgent(NodeGraph* nodeGraph, float width, Colour colour, World* world) : mNodeGraph(nodeGraph), mRadius(width), mColour(colour), mCurrentWorld(world)
 {
 	mCurrentNode = mNodeGraph->GetNodeAt(0);
 	mPosition = mCurrentNode->mPosition;
@@ -112,7 +112,10 @@ void PathAgent::Draw(LineRenderer* lines)
 {
 	lines->DrawCircle(mPosition, mRadius, mColour);
 
-
+	for (std::vector<Vec2> e : pathedges)
+	{
+		lines->DrawLineWithArrow(e[0], e[1], 500);
+	}
 
 	for (int i = 1; i < mPointPath.size(); i++)
 	{
@@ -125,11 +128,11 @@ void PathAgent::Draw(LineRenderer* lines)
 
 	for (Vec2 p : portalRight)
 	{
-		lines->DrawCircle(p, 5, Colour::RED);
+		lines->DrawCircle(p, 100, Colour::RED);
 	}
 	for (Vec2 p : portalLeft)
 	{
-		lines->DrawCircle(p, 5, Colour::BLUE);
+		lines->DrawCircle(p, 100, Colour::BLUE);
 	}
 }
 
