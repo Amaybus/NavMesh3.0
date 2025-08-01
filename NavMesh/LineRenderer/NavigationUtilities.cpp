@@ -8,8 +8,6 @@
 
 std::vector<Vec2> AStarSearch(PathAgent* agent, Node* startNode, Node* endNode, const std::vector<Obstacle*>& obstacles)
 {
-	// https://cdn.aaai.org/AAAI/2006/AAAI06-148.pdf
-
 	std::vector<Vec2> returnPath;
 
 	if (startNode == nullptr || endNode == nullptr) { std::cout << "Start or end node is null."; return returnPath; }
@@ -33,8 +31,8 @@ std::vector<Vec2> AStarSearch(PathAgent* agent, Node* startNode, Node* endNode, 
 	while (!mOpenList.empty())
 	{
 		// (this currently works but need to be adjusted as we are not comparing the right thing)
-		// Sort by hscore
-		std::sort(mOpenList.begin(), mOpenList.end(), [](Node* lhs, Node* rhs) { return lhs->hScore < rhs->hScore; });
+		// Sort by fscore
+		std::sort(mOpenList.begin(), mOpenList.end(), [](Node* lhs, Node* rhs) { return lhs->fScore < rhs->fScore; });
 		Node* currentNode = mOpenList[0];
 
 		// Reached our destination
@@ -51,8 +49,8 @@ std::vector<Vec2> AStarSearch(PathAgent* agent, Node* startNode, Node* endNode, 
 			if (std::find(mClosedList.begin(), mClosedList.end(), c.mTarget) != mClosedList.end()) { continue; }
 
 			c.mTarget->gScore = currentNode->gScore + c.mCost;
-			c.mTarget->hScore = (endNode->mPosition - c.mTarget->mPosition).GetMagnitude();
-			c.mTarget->fScore = c.mTarget->gScore + c.mTarget->hScore;
+			c.mTarget->hScore = (c.mTarget->mPosition.x - endNode->mPosition.x) + (c.mTarget->mPosition.y - endNode->mPosition.y);
+			c.mTarget->fScore = c.mTarget->hScore + c.mTarget->gScore;
 
 			// Haven't visited the node yet
 			if (std::find(mOpenList.begin(), mOpenList.end(), c.mTarget) == mOpenList.end())
@@ -98,16 +96,16 @@ std::vector<Vec2> StringPull(PathAgent* agent, std::vector<Node*>& path, const s
 {
 	agent->ClearPortals();
 	agent->pathedges.clear();
-	
+
 	std::vector<std::vector<Vec2>> portals;
-	
-	for (int i = path.size() - 1; i >= 1; i--)
+
+	for (size_t i = path.size() - 1; i >= 1; i--)
 	{
 		std::vector<Vec2> edge = FindTwoCommonVerts(path[i]->mTriangle, path[i - 1]->mTriangle);
 		agent->pathedges.push_back(edge);
 		portals.insert(portals.begin(), edge);
 	}
-	
+
 	Vec2 funnelTip = agent->GetPosition();
 	Vec2 endPos;
 	if (IsPointInObstacle(agent->GetEndPos(), agent->GetWorld()->GetObstacles(), 10000))
@@ -116,72 +114,74 @@ std::vector<Vec2> StringPull(PathAgent* agent, std::vector<Node*>& path, const s
 	}
 	else { endPos = agent->GetEndPos(); }
 
-	
+
 	// check to see if a direct line of sight is available
 	// if yes, move directly to end pos
 	std::vector<Vec2> returnPath;
 	returnPath.push_back(funnelTip);
 	if (!DoLinesIntersect(funnelTip, endPos, obstacles))
 	{
-		path.erase(path.begin() + path.size() - 1);
 		returnPath.push_back(endPos);
 		return returnPath;
 	}
-	
+
 	// otherwise do funnel algorithm
-	float agentRadius = agent->GetRadius()*2;
+	float agentRadius = agent->GetRadius() * 2;
 	Vec2 portalRight = ReturnRightPoint(portals[0], funnelTip);
 	Vec2 portalLeft = ReturnLeftPoint(portals[0], funnelTip);
 	Vec2 direction = (portalRight - portalLeft).Normalise();
-	
+
 	portalRight = portalRight - direction * agentRadius;
 	portalLeft = portalLeft + direction * agentRadius;
-	
+
 	agent->AddPortalRight(portalRight);
 	agent->AddPortalLeft(portalLeft);
-	
+
 	Vec2 left;
 	Vec2 right;
-	
+
 	bool hitCorner = false;
 
-	for(int i = 0; i < portals.size(); i++)
+	for (int i = 0; i < portals.size(); i++)
 	{
 		left = ReturnLeftPoint(portals[i], path[i]->mPosition);
 		right = ReturnRightPoint(portals[i], path[i]->mPosition);
 		direction = (right - left).Normalise();
-	
-		left = left + direction * agentRadius;
-		right = right - direction * agentRadius;
-	
+
+		left += direction * agentRadius;
+		right -= direction * agentRadius;
+
 		agent->AddPortalRight(right);
 		agent->AddPortalLeft(left);
-	
+
 		if (PseudoCross(portalLeft - funnelTip, left - funnelTip) <= 0.0f)
 		{
 			portalLeft = left;
 		}
 		else
 		{
-			hitCorner = true;
+			returnPath.push_back(portalLeft);
+			hitCorner = false;
+
+			funnelTip = portalLeft;
+
+			if (!DoLinesIntersect(funnelTip, endPos, obstacles))
+			{
+				returnPath.push_back(path[path.size() - 1]->mPosition);
+				return returnPath;
+			}
 		}
-		
-		if (PseudoCross(portalRight - funnelTip, right - funnelTip) <= 0.0f)
+
+		if (PseudoCross(portalRight - funnelTip, right - funnelTip) >= 0.0f)
 		{
 			portalRight = right;
 		}
 		else
 		{
-			hitCorner = true;
-		}
-	
-		if (i <= portals.size() - 1 && hitCorner == true)
-		{
-			Vec2 shortestPortal = FindShortestPortal(portalLeft, portalRight, funnelTip, endPos);
-			returnPath.push_back(shortestPortal);
-			funnelTip = shortestPortal;
+			returnPath.push_back(portalRight);
 			hitCorner = false;
-	
+			funnelTip = portalRight;
+
 			if (!DoLinesIntersect(funnelTip, endPos, obstacles))
 			{
 				returnPath.push_back(path[path.size() - 1]->mPosition);
@@ -189,17 +189,17 @@ std::vector<Vec2> StringPull(PathAgent* agent, std::vector<Node*>& path, const s
 			}
 		}
 	}
-	
-	returnPath.push_back(FindShortestPortal(portalLeft, portalRight, funnelTip, endPos));
+
+	returnPath.push_back(FindShortestPortal(portalLeft, portalRight, endPos));
 	path.erase(path.begin() + path.size() - 1);
 	returnPath.push_back(endPos);
 	return returnPath;
 }
 
-Vec2 FindShortestPortal(const Vec2& left, const Vec2& right, Vec2& funnelTip, Vec2& endPos)
+Vec2 FindShortestPortal(const Vec2& left, const Vec2& right, Vec2& endPos)
 {
-	float mag1 = (funnelTip - left).GetMagnitude() + (endPos - left).GetMagnitude();
-	float mag2 = (funnelTip - right).GetMagnitude() + (endPos - right).GetMagnitude();
+	float mag1 = (left - endPos).GetMagnitude();
+	float mag2 = (right - endPos).GetMagnitude();
 
 	return mag1 > mag2 ? right : left;
 }

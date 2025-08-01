@@ -46,7 +46,7 @@ void World::Initialise()
 	mNavMesh = navMesh;
 
 	// Border 
-	mNavMesh->AddPoint(Vec2(-0.5, level.GetHeight() - 0.5));
+	mNavMesh->AddPoint(Vec2(-0.5f, level.GetHeight() - 0.5f));
 	mNavMesh->AddPoint(Vec2(level.GetWidth() - 0.5f, level.GetHeight() - 0.5f));
 	mNavMesh->AddPoint(Vec2(level.GetWidth() - 0.5f, -0.5f));
 	mNavMesh->AddPoint(Vec2(-0.5f, -0.5f));
@@ -60,9 +60,9 @@ void World::Initialise()
 			if (level.At(x, y) == TileType::OBSTACLE)
 			{
 				// Skip any tiles which are already in an obstacle
-				if (IsPointInObstacle(Vec2(x, y), mObstacles, level.GetWidth())) { continue; }
+				if (IsPointInObstacle(Vec2((float)x, (float)y), mObstacles, level.GetWidth())) { continue; }
 
-				std::vector<Vec2> obPoints = LineTrace(Vec2(x, y), level, TileType::OBSTACLE);
+				std::vector<Vec2> obPoints = LineTrace(Vec2((float)x, (float)y), level, TileType::OBSTACLE);
 
 				Obstacle* ob = new Obstacle(obPoints);
 				mObstacles.push_back(ob);
@@ -117,7 +117,7 @@ void World::Update(float delta)
 			}
 		}
 	}
-	
+
 	//if (ImGui::CollapsingHeader("NAVMESH"))
 	//{
 	//	ImGui::Checkbox("Show triangles", &mNavMesh->bShowTriangles);
@@ -247,7 +247,7 @@ std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid, TileType tileType)
 			}
 		}
 
-		if (grid.At(currentPos.x + secDir.x, currentPos.y + secDir.y) != tileType && grid.At(currentPos.x + primDir.x, currentPos.y + primDir.y) == tileType)
+		if (grid.At(currentPos.x + secDir.x,currentPos.y + secDir.y) != tileType && grid.At(currentPos.x + primDir.x, currentPos.y + primDir.y) == tileType)
 		{
 			// Move forward a tile
 			currentPos += primDir;
@@ -314,6 +314,7 @@ Vec2 World::SwitchDirection(int moveDirIdex)
 	case 3:
 		return Vec2(0, -1);
 	}
+	return Vec2();
 }
 
 void World::DrawCircumcircles(LineRenderer* lines)
@@ -357,13 +358,13 @@ void World::DrawCircumcircles(LineRenderer* lines)
 	normals[2] = (tri->mEdgeList[2].mPoints[0] - tri->mEdgeList[2].mPoints[1]).GetRotatedBy270().GetNormalised();
 
 	Vec2 edgeMidPoints[3];
-	edgeMidPoints[0] = ((tri->mEdgeList[0].mPoints[0] * 1.22) + tri->mEdgeList[0].mPoints[1]) / 2.22;
-	edgeMidPoints[1] = ((tri->mEdgeList[1].mPoints[0] * 1.22) + tri->mEdgeList[1].mPoints[1]) / 2.22;
-	edgeMidPoints[2] = ((tri->mEdgeList[2].mPoints[0] * 1.22) + tri->mEdgeList[2].mPoints[1]) / 2.22;
+	edgeMidPoints[0] = ((tri->mEdgeList[0].mPoints[0] * 1.22f) + tri->mEdgeList[0].mPoints[1]) / 2.22f;
+	edgeMidPoints[1] = ((tri->mEdgeList[1].mPoints[0] * 1.22f) + tri->mEdgeList[1].mPoints[1]) / 2.22f;
+	edgeMidPoints[2] = ((tri->mEdgeList[2].mPoints[0] * 1.22f) + tri->mEdgeList[2].mPoints[1]) / 2.22f;
 
 	for (int i = 0; i < 3; i++)
 	{
-		lines->DrawLineWithArrow(edgeMidPoints[i] - (normals[i] * 0.01), edgeMidPoints[i] + normals[i] * 2, Colour::MAGENTA, 0.1f);
+		lines->DrawLineWithArrow(edgeMidPoints[i] - (normals[i] * 0.01f), edgeMidPoints[i] + normals[i] * 2, Colour::MAGENTA, 0.1f);
 	}
 }
 

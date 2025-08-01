@@ -23,6 +23,7 @@ public:
 	void LoadFromImage(std::string filename);
 
 	TileType& At(int xCoord, int yCoord);
+	TileType& At(float xCoord, float yCoord);
 	TileType& AtWrap(int xCoord, int yCoord);
 	TileType& AtClamp(int xCoord, int yCoord);
 

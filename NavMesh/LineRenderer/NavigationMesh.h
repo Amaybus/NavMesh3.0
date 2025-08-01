@@ -30,7 +30,7 @@ public:
 
 	void AddPoint(Vec2 point) { mPoints.push_back(point); }
 	void AddPointList(std::vector<Vec2> pointList);
-	int GetNumberOfTriangles() { return mTriangles.size(); }
+	int GetNumberOfTriangles() { return (int)mTriangles.size(); }
 	Triangle* GetTriangleAtIndex(int index) { return mTriangles[index]; }
 };
 

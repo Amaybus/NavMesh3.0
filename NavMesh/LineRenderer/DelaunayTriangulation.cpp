@@ -3,7 +3,7 @@
 #include "Triangle.h"
 #include "Utility.h"
 #include "Grid.h"
-#include "Edge.h"
+#include "TriEdge.h"
 #include "Vec2.h"
 #include <random>
 #include <algorithm>
@@ -127,9 +127,9 @@ std::vector<Vec2> PoissonDisk(Vec2 startPoint, const std::vector<Obstacle*>& obs
 	{
 		for (int i = 0; i < attempts; i++)
 		{
-			float theta = rand() % 360;
+			float theta = float(rand() % 360);
 			isValid = true;
-			int range = maxDist - minDist + 1;
+			int range = int(maxDist - minDist) + 1;
 			Vec2 point = Vec2(((rand() % range + minDist) + openList[0].x) * cos(DegToRad(theta)), (rand() % range + minDist) + openList[0].y * sin(DegToRad(theta)));
 
 			if (point.x < 0.5 || point.x > 18.5 || point.y < 0.5 || point.y > 14.5) { continue; }
@@ -353,7 +353,6 @@ void RestoreDelauneyness(std::vector<Triangle*>& listOfTriangles, std::vector<Ve
 {
 	int safety = 0;
 	int successCount = 0;
-	int a = (listOfTriangles.size()) * (points.size());
 
 	while (successCount < ((listOfTriangles.size()) * (points.size())))
 	{
@@ -798,7 +797,6 @@ void SwapEdge(TriEdge& edge, std::vector<Triangle*>& listOfTriangles)
 {
 	Triangle* tri1 = listOfTriangles[edge.mTriIndex[0]];
 	Triangle* tri2 = listOfTriangles[edge.mTriIndex[1]];
-	int removalIndex[2];
 
 	Vec2 connectPoint1;
 	Vec2 connectPoint2;

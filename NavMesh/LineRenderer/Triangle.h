@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Vec2.h"
-#include "Edge.h"
+#include "TriEdge.h"
 
 
 struct Triangle

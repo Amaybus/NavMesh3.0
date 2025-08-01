@@ -46,6 +46,12 @@ TileType& Grid::At(int xCoord, int yCoord)
 {
 	return data[xCoord + yCoord * mWidth];
 }
+
+TileType& Grid::At(float xCoord, float yCoord)
+{
+	return data[(int)xCoord + (int)yCoord * mWidth];
+}
+
 TileType& Grid::AtWrap(int xCoord, int yCoord)
 {
 	xCoord = xCoord % mWidth;
