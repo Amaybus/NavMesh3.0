@@ -31,6 +31,8 @@ std::vector<Vec2> PoissonDisk(Vec2 startPoint, const std::vector<Obstacle*>& obs
 // If we want constraints
 std::vector<Triangle*> ConstrainedDelaunayTriangulation(std::vector<Triangle*>& listOfTriangles, const std::vector<Obstacle*>& obstacles);
 
+void AssignEdgesAndAdjTris(std::vector<Triangle*>& listOfTriangles);
+
 // To ensure all triangles are in the correct winding order
 Triangle* CreateClockwiseTriangle(Vec2 points[]);
 Triangle* CreateClockwiseTriangle(std::vector<Vec2> points);
@@ -70,6 +72,9 @@ bool IsSameTriangle(const Triangle* tri1, const Triangle* tri2);
 
 // To ensure we are swapping the diagonals of the right triangles
 bool IsConvexQuadrilateral(const Triangle* tri1, const Triangle* tri2);
+
+// Assigns the adjacent triangles to this triangle
+void ConstructAdjacentTriangles(Triangle* triangle, const std::vector<Triangle*>& listOfTriangles);
 
 // Assigns the triangles which share the same edge
 void AssignTrianglesToEdges(Triangle* triangle, std::vector<Triangle*>& listOfTriangles);

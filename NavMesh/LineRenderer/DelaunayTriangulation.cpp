@@ -3,7 +3,7 @@
 #include "Triangle.h"
 #include "Utility.h"
 #include "Grid.h"
-#include "TriEdge.h"
+#include "Edge.h"
 #include "Vec2.h"
 #include <random>
 #include <algorithm>
@@ -14,7 +14,7 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 	{
 		for (Vec2 v : ob->GetPoints())
 		{
-			// Dont add any points we already have in the list
+			// Dont add any pounts we already have in the list
 			if (std::find(points.begin(), points.end(), v) == points.end())
 			{
 				points.push_back(v);
@@ -61,7 +61,7 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 		// Add the valid triangles to the stack
 		for (Triangle* tri : triCheck.returnTriangles)
 		{
-			//ConstructTriangleEdges(tri);
+			ConstructTriangleEdges(tri);
 			triangleStack.push_back(tri);
 		}
 
@@ -105,6 +105,7 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 		}
 	}
 
+	AssignEdgesAndAdjTris(returnList);
 	returnList = ConstrainedDelaunayTriangulation(returnList, obstacles);
 	RemoveTrianglesFromObstacles(obstacles, returnList);
 	RestoreDelauneyness(returnList, points);
@@ -118,15 +119,15 @@ std::vector<Vec2> PoissonDisk(Vec2 startPoint, const std::vector<Obstacle*>& obs
 	openList.push_back(startPoint);
 	std::vector<Vec2> closedList;
 	int attempts = 100;
-	int minDist = 2;
-	int maxDist = 5;
+	float minDist = 2;
+	float maxDist = 5;
 	bool isValid = true;
 
 	while (!openList.empty())
 	{
 		for (int i = 0; i < attempts; i++)
 		{
-			int theta = rand() % 360;
+			float theta = rand() % 360;
 			isValid = true;
 			int range = maxDist - minDist + 1;
 			Vec2 point = Vec2(((rand() % range + minDist) + openList[0].x) * cos(DegToRad(theta)), (rand() % range + minDist) + openList[0].y * sin(DegToRad(theta)));
@@ -176,6 +177,17 @@ std::vector<Triangle*> ConstrainedDelaunayTriangulation(std::vector<Triangle*>& 
 	}
 
 	return listOfTriangles;
+}
+
+
+void AssignEdgesAndAdjTris(std::vector<Triangle*>& listOfTriangles)
+{
+	for (Triangle* t : listOfTriangles)
+	{
+		ConstructTriangleEdges(t);
+		//AssignTrianglesToEdges(t, listOfTriangles);
+		ConstructAdjacentTriangles(t, listOfTriangles);
+	}
 }
 
 Triangle* CreateClockwiseTriangle(Vec2 points[])
@@ -341,6 +353,7 @@ void RestoreDelauneyness(std::vector<Triangle*>& listOfTriangles, std::vector<Ve
 {
 	int safety = 0;
 	int successCount = 0;
+	int a = (listOfTriangles.size()) * (points.size());
 
 	while (successCount < ((listOfTriangles.size()) * (points.size())))
 	{
@@ -644,6 +657,28 @@ bool IsConvexQuadrilateral(const Triangle* tri1, const Triangle* tri2)
 	return false;
 }
 
+void ConstructAdjacentTriangles(Triangle* triangle, const std::vector<Triangle*>& listOfTriangles)
+{
+	for (TriEdge e : triangle->mEdgeList)
+	{
+		e.mTriangles.push_back(triangle);
+
+		for (int i = 0; i < listOfTriangles.size(); i++)
+		{
+			Triangle* t = listOfTriangles[i];
+			if (IsSameTriangle(t, triangle)) { continue; }
+
+			if (std::find(std::begin(t->mPoints), std::end(t->mPoints), e.mPoints[0]) != std::end(t->mPoints) &&
+				std::find(std::begin(t->mPoints), std::end(t->mPoints), e.mPoints[1]) != std::end(t->mPoints))
+			{
+				e.mTriangles.push_back(t);
+				triangle->mAdjTris.push_back(t);
+				triangle->adjTriIndices.push_back(i);
+			}
+		}
+	}
+}
+
 void AssignTrianglesToEdges(Triangle* triangle, std::vector<Triangle*>& listOfTriangles)
 {
 	for (TriEdge& edge : triangle->mEdgeList)
@@ -763,6 +798,7 @@ void SwapEdge(TriEdge& edge, std::vector<Triangle*>& listOfTriangles)
 {
 	Triangle* tri1 = listOfTriangles[edge.mTriIndex[0]];
 	Triangle* tri2 = listOfTriangles[edge.mTriIndex[1]];
+	int removalIndex[2];
 
 	Vec2 connectPoint1;
 	Vec2 connectPoint2;

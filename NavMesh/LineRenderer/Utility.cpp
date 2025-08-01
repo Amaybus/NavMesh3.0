@@ -1,7 +1,7 @@
 #include "Utility.h"
 #include "Obstacle.h"
 #include "Triangle.h"
-#include "TriEdge.h"
+#include "Edge.h"
 
 #include <cmath>
 
@@ -35,7 +35,7 @@ float FindAngle(Vec2 point, Vec2 next, Vec2 previous)
 	return result;
 }
 
-bool IsPointInObstacle(Vec2 point, const std::vector<Obstacle*>& obstacles, int levelWidth)
+bool IsPointInObstacle(Vec2 point, const std::vector<Obstacle*>& obstacles, float levelWidth)
 {
 	int count = 0;
 
@@ -114,15 +114,15 @@ bool IsTriangleInObstacle(Triangle* triangle, const std::vector<Obstacle*>& obst
 	normals[2] = (triangle->mEdgeList[2].mPoints[0] - triangle->mEdgeList[2].mPoints[1]).GetRotatedBy270().GetNormalised();
 
 	Vec2 edgeMidPoints[3];
-	edgeMidPoints[0] = ((triangle->mEdgeList[0].mPoints[0] * 1.22f) + triangle->mEdgeList[0].mPoints[1]) / 2.22f;
-	edgeMidPoints[1] = ((triangle->mEdgeList[1].mPoints[0] * 1.22f) + triangle->mEdgeList[1].mPoints[1]) / 2.22f;
-	edgeMidPoints[2] = ((triangle->mEdgeList[2].mPoints[0] * 1.22f) + triangle->mEdgeList[2].mPoints[1]) / 2.22f;
+	edgeMidPoints[0] = ((triangle->mEdgeList[0].mPoints[0] * 1.22) + triangle->mEdgeList[0].mPoints[1]) / 2.22;
+	edgeMidPoints[1] = ((triangle->mEdgeList[1].mPoints[0] * 1.22) + triangle->mEdgeList[1].mPoints[1]) / 2.22;
+	edgeMidPoints[2] = ((triangle->mEdgeList[2].mPoints[0] * 1.22) + triangle->mEdgeList[2].mPoints[1]) / 2.22;
 
 	int count = 0;
 
 	for (int i = 0; i < 3; i++)
 	{
-		Vec2 point = edgeMidPoints[i] - (normals[i] * 0.01f);
+		Vec2 point = edgeMidPoints[i] - (normals[i] * 0.01);
 		for (Obstacle* ob : obstacles)
 		{
 			std::vector<TriEdge> currentObEdges;
@@ -198,7 +198,7 @@ std::vector<Vec2> AddBufferToObstacles(std::vector<Obstacle*>& obstacles)
 
 			Vec2 final = (direction + direction2) / 2;
 
-			returnPoints.push_back(points[j] + final * 0.1f);
+			returnPoints.push_back(points[j] + final * 0.1);
 
 		}
 	}

@@ -159,6 +159,7 @@
     <ClCompile Include="..\imgui\imgui_widgets.cpp" />
     <ClCompile Include="Colour.cpp" />
     <ClCompile Include="DelaunayTriangulation.cpp" />
+    <ClCompile Include="Edge.cpp" />
     <ClCompile Include="EntryPoint.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="GLFWCallbacks.cpp" />
@@ -193,7 +194,7 @@
     <ClInclude Include="Application.h" />
     <ClInclude Include="Colour.h" />
     <ClInclude Include="DelaunayTriangulation.h" />
-    <ClInclude Include="TriEdge.h" />
+    <ClInclude Include="Edge.h" />
     <ClInclude Include="glad.h" />
     <ClInclude Include="GLFWCallbacks.h" />
     <ClInclude Include="Graphics.h" />

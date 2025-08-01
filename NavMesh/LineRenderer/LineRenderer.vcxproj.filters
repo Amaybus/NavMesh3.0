@@ -68,6 +68,9 @@
     <ClCompile Include="Obstacle.cpp">
       <Filter>Game\Mesh Generation</Filter>
     </ClCompile>
+    <ClCompile Include="Edge.cpp">
+      <Filter>Game\Mesh Generation</Filter>
+    </ClCompile>
     <ClCompile Include="Grid.cpp">
       <Filter>Game\World Generation</Filter>
     </ClCompile>
@@ -178,7 +181,7 @@
     <ClInclude Include="Obstacle.h">
       <Filter>Game\Mesh Generation</Filter>
     </ClInclude>
-    <ClInclude Include="TriEdge.h">
+    <ClInclude Include="Edge.h">
       <Filter>Game\Mesh Generation</Filter>
     </ClInclude>
     <ClInclude Include="Grid.h">
