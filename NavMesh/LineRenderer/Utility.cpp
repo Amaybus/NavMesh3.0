@@ -177,7 +177,7 @@ std::vector<TriEdge> ConstructObstacleEdges(Obstacle* ob)
 	return returnEdges;
 }
 
-std::vector<Vec2> AddBufferToObstacles(std::vector<Obstacle*>& obstacles)
+std::vector<Vec2> AddBufferToObstacles(const std::vector<Obstacle*>& obstacles)
 {
 	std::vector<Vec2> returnPoints;
 	Vec2 next;
@@ -198,11 +198,9 @@ std::vector<Vec2> AddBufferToObstacles(std::vector<Obstacle*>& obstacles)
 
 			Vec2 final = (direction + direction2) / 2;
 
-			returnPoints.push_back(points[j] + final * 0.1f);
-
+			returnPoints.push_back(points[j] + final * 1.0f);
 		}
 	}
-
 
 	return returnPoints;
 }

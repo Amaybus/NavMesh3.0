@@ -25,6 +25,7 @@ class PathAgent
 	float mRadius = 0;
 	Vec2 mEndPos;
 
+	// DEBUG
 	std::vector<Vec2> portalLeft;
 	std::vector<Vec2> portalRight;
 

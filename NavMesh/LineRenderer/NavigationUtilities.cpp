@@ -20,6 +20,8 @@ std::vector<Vec2> AStarSearch(PathAgent* agent, Node* startNode, Node* endNode, 
 
 	// Initialise start node
 	startNode->gScore = 0;
+	startNode->hScore = 0;
+	startNode->fScore = 0;
 	startNode->mPrevious = nullptr;
 
 	// Create temp lists to sort which nodes we are visiting/visited
@@ -49,7 +51,7 @@ std::vector<Vec2> AStarSearch(PathAgent* agent, Node* startNode, Node* endNode, 
 			if (std::find(mClosedList.begin(), mClosedList.end(), c.mTarget) != mClosedList.end()) { continue; }
 
 			c.mTarget->gScore = currentNode->gScore + c.mCost;
-			c.mTarget->hScore = (c.mTarget->mPosition.x - endNode->mPosition.x) + (c.mTarget->mPosition.y - endNode->mPosition.y);
+			c.mTarget->hScore = std::abs(c.mTarget->mPosition.x - endNode->mPosition.x) + std::abs(c.mTarget->mPosition.y - endNode->mPosition.y);
 			c.mTarget->fScore = c.mTarget->hScore + c.mTarget->gScore;
 
 			// Haven't visited the node yet
@@ -126,7 +128,7 @@ std::vector<Vec2> StringPull(PathAgent* agent, std::vector<Node*>& path, const s
 	}
 
 	// otherwise do funnel algorithm
-	float agentRadius = agent->GetRadius() * 2;
+	float agentRadius = agent->GetRadius() * 3;
 	Vec2 portalRight = ReturnRightPoint(portals[0], funnelTip);
 	Vec2 portalLeft = ReturnLeftPoint(portals[0], funnelTip);
 	Vec2 direction = (portalRight - portalLeft).Normalise();

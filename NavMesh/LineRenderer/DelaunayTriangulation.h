@@ -31,8 +31,6 @@ std::vector<Vec2> PoissonDisk(Vec2 startPoint, const std::vector<Obstacle*>& obs
 // If we want constraints
 std::vector<Triangle*> ConstrainedDelaunayTriangulation(std::vector<Triangle*>& listOfTriangles, const std::vector<Obstacle*>& obstacles);
 
-void AssignEdgesAndAdjTris(std::vector<Triangle*>& listOfTriangles);
-
 // To ensure all triangles are in the correct winding order
 Triangle* CreateClockwiseTriangle(Vec2 points[]);
 Triangle* CreateClockwiseTriangle(std::vector<Vec2> points);
@@ -56,7 +54,6 @@ bool CheckCircumcircle(Triangle* triangle, int triangleIndex, const Vec2& pointT
 
 // Used for when a point falls within the circumcircle of a triangle
 void SwapTriangles(Triangle* triangleToSwap, int triangleIndex, const Vec2& point, std::vector<Triangle*>& listToCheck);
-void SwapTrianglesWithKnownAdjacent(Triangle* tri1, int tri1Index, Triangle* tri2, int tri2Index, std::vector<Triangle*>& listToCheck, const TriEdge& edge);
 
 // Gives us the triangle which contains two of the same points
 TriangleAndIndex FindAdjacentTriangle(const std::vector<Triangle*>& triangleStack, Triangle* triangle, const Vec2& pointToCheck);
@@ -73,24 +70,11 @@ bool IsSameTriangle(const Triangle* tri1, const Triangle* tri2);
 // To ensure we are swapping the diagonals of the right triangles
 bool IsConvexQuadrilateral(const Triangle* tri1, const Triangle* tri2);
 
-// Assigns the adjacent triangles to this triangle
-void ConstructAdjacentTriangles(Triangle* triangle, const std::vector<Triangle*>& listOfTriangles);
-
-// Assigns the triangles which share the same edge
-void AssignTrianglesToEdges(Triangle* triangle, std::vector<Triangle*>& listOfTriangles);
-void AssignTrianglesToEdges(TriEdge& edge, std::vector<Triangle*>& listOfTriangles);
-
 // Finds all triangle edges that overlap with a constraint edge
 std::vector<TriEdge> FindOverlapsWithConstraints(std::vector<TriEdge> constraintEdges, std::vector<Triangle*>& listOfTriangles);
 
 // Removes any edges that have been added to the list twice
 std::vector<TriEdge> RemoveDuplicateEdges(std::vector<TriEdge>& edges);
-
-// Removes all overlapping edges
-void HandleOverlapsWithConstraints(std::vector<TriEdge>& edges, std::vector<TriEdge>& constraints, std::vector<Triangle*>& listOfTriangles);
-
-// Swap adjacent triangles 
-void SwapEdge(TriEdge& edge, std::vector<Triangle*>& listOfTriangles);
 
 // Cycles through the overlapping edge list and will swap triangles that share the same edge
 void HandleOverlappingEdges(std::vector<Triangle*>& listOfTriangles);

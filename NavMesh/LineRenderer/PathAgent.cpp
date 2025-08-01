@@ -112,11 +112,6 @@ void PathAgent::Draw(LineRenderer* lines)
 {
 	lines->DrawCircle(mPosition, mRadius, mColour);
 
-	for (std::vector<Vec2> e : pathedges)
-	{
-		lines->DrawLineWithArrow(e[0], e[1], 500);
-	}
-
 	for (int i = 1; i < mPointPath.size(); i++)
 	{
 		lines->DrawLineSegment(mPointPath[i - 1], mPointPath[i], Colour::ORANGE);
@@ -126,14 +121,21 @@ void PathAgent::Draw(LineRenderer* lines)
 		lines->FinishLineStrip();
 	}
 
+	// DEBUG DRAWING
 	for (Vec2 p : portalRight)
 	{
 		lines->DrawCircle(p, 100, Colour::RED);
 	}
+
 	for (Vec2 p : portalLeft)
 	{
 		lines->DrawCircle(p, 100, Colour::BLUE);
 	}
+
+	//for (std::vector<Vec2> e : pathedges)
+	//{
+	//	lines->DrawLineWithArrow(e[0], e[1], 500);
+	//}
 }
 
 void PathAgent::GoToNode(Node* destination)

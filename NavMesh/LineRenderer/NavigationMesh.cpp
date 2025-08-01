@@ -13,9 +13,8 @@ void NavigationMesh::Draw(LineRenderer* lines)
 	for (int i = 0; i < mPoints.size(); i++)
 	{
 		lines->DrawCircle(mPoints[i], 0.1f, Colour::GREEN);
-		//lines->AddPointToLine(mPoints[i], Colour::BLUE);
 	}
-	//lines->FinishLineLoop();
+
 	int index = 0;
 	for (Triangle* t : mTriangles)
 	{
