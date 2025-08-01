@@ -101,7 +101,7 @@ std::vector<Vec2> StringPull(PathAgent* agent, std::vector<Node*>& path, const s
 	
 	std::vector<std::vector<Vec2>> portals;
 	
-	for (int i = path.size() - 1; i >= 1; i--)
+	for (size_t i = path.size() - 1; i >= 1; i--)
 	{
 		std::vector<Vec2> edge = FindTwoCommonVerts(path[i]->mTriangle, path[i - 1]->mTriangle);
 		agent->pathedges.push_back(edge);
@@ -123,7 +123,6 @@ std::vector<Vec2> StringPull(PathAgent* agent, std::vector<Node*>& path, const s
 	returnPath.push_back(funnelTip);
 	if (!DoLinesIntersect(funnelTip, endPos, obstacles))
 	{
-		path.erase(path.begin() + path.size() - 1);
 		returnPath.push_back(endPos);
 		return returnPath;
 	}
@@ -151,8 +150,8 @@ std::vector<Vec2> StringPull(PathAgent* agent, std::vector<Node*>& path, const s
 		right = ReturnRightPoint(portals[i], path[i]->mPosition);
 		direction = (right - left).Normalise();
 	
-		left = left + direction * agentRadius;
-		right = right - direction * agentRadius;
+		left += direction * agentRadius;
+		right -= direction * agentRadius;
 	
 		agent->AddPortalRight(right);
 		agent->AddPortalLeft(left);
@@ -163,25 +162,28 @@ std::vector<Vec2> StringPull(PathAgent* agent, std::vector<Node*>& path, const s
 		}
 		else
 		{
-			hitCorner = true;
+			returnPath.push_back(portalLeft);
+			hitCorner = false;
+
+			funnelTip = portalLeft;
+
+			if (!DoLinesIntersect(funnelTip, endPos, obstacles))
+			{
+				returnPath.push_back(path[path.size() - 1]->mPosition);
+				return returnPath;
+			}
 		}
 		
-		if (PseudoCross(portalRight - funnelTip, right - funnelTip) <= 0.0f)
+		if (PseudoCross(portalRight - funnelTip, right - funnelTip) >= 0.0f)
 		{
 			portalRight = right;
 		}
 		else
 		{
-			hitCorner = true;
-		}
-	
-		if (i <= portals.size() - 1 && hitCorner == true)
-		{
-			Vec2 shortestPortal = FindShortestPortal(portalLeft, portalRight, funnelTip, endPos);
-			returnPath.push_back(shortestPortal);
-			funnelTip = shortestPortal;
+			returnPath.push_back(portalRight);
 			hitCorner = false;
-	
+			funnelTip = portalRight;
+
 			if (!DoLinesIntersect(funnelTip, endPos, obstacles))
 			{
 				returnPath.push_back(path[path.size() - 1]->mPosition);
@@ -190,16 +192,16 @@ std::vector<Vec2> StringPull(PathAgent* agent, std::vector<Node*>& path, const s
 		}
 	}
 	
-	returnPath.push_back(FindShortestPortal(portalLeft, portalRight, funnelTip, endPos));
+	returnPath.push_back(FindShortestPortal(portalLeft, portalRight, endPos));
 	path.erase(path.begin() + path.size() - 1);
 	returnPath.push_back(endPos);
 	return returnPath;
 }
 
-Vec2 FindShortestPortal(const Vec2& left, const Vec2& right, Vec2& funnelTip, Vec2& endPos)
+Vec2 FindShortestPortal(const Vec2& left, const Vec2& right, Vec2& endPos)
 {
-	float mag1 = (funnelTip - left).GetMagnitude() + (endPos - left).GetMagnitude();
-	float mag2 = (funnelTip - right).GetMagnitude() + (endPos - right).GetMagnitude();
+	float mag1 = (left - endPos).GetMagnitude();
+	float mag2 = (right - endPos).GetMagnitude();
 
 	return mag1 > mag2 ? right : left;
 }
