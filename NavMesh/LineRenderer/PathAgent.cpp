@@ -14,7 +14,11 @@ PathAgent::PathAgent(NodeGraph* nodeGraph, float width, Colour colour, World* wo
 
 void PathAgent::Update(float deltaTime)
 {
-	if (mNodePath.empty() && mPointPath.empty()) { return; }
+	int randNum = rand() % mNodeGraph->GetNodeList().size() - 1;
+	if (randNum < 0) { randNum = 0; }
+	//if (mNodePath.empty() && mPointPath.empty()) { return; }
+
+	if(mPointPath.empty()) { GoToNode(mNodeGraph->GetNodeAtIndex(randNum)); }
 
 	else if (!mNodePath.empty()) { NavigateNodePath(deltaTime); }
 	else { NavigatePointPath(deltaTime); }
@@ -112,26 +116,26 @@ void PathAgent::Draw(LineRenderer* lines)
 {
 	lines->DrawCircle(mPosition, mRadius, mColour);
 
-	for (int i = 1; i < mPointPath.size(); i++)
-	{
-		lines->DrawLineSegment(mPointPath[i - 1], mPointPath[i], Colour::ORANGE);
-
-		Vec2 pos = ((mPointPath[i - 1] + mPointPath[i]) * 0.5f);
-
-		lines->FinishLineStrip();
-	}
+	//for (int i = 1; i < mPointPath.size(); i++)
+	//{
+	//	lines->DrawLineSegment(mPointPath[i - 1], mPointPath[i], Colour::ORANGE);
+	//
+	//	Vec2 pos = ((mPointPath[i - 1] + mPointPath[i]) * 0.5f);
+	//
+	//	lines->FinishLineStrip();
+	//}
 
 	// DEBUG DRAWING
-	for (Vec2 p : portalRight)
-	{
-		lines->DrawCircle(p, 100, Colour::RED);
-	}
-
-	for (Vec2 p : portalLeft)
-	{
-		lines->DrawCircle(p, 100, Colour::BLUE);
-	}
-
+	//for (Vec2 p : portalRight)
+	//{
+	//	lines->DrawCircle(p, 100, Colour::RED);
+	//}
+	//
+	//for (Vec2 p : portalLeft)
+	//{
+	//	lines->DrawCircle(p, 100, Colour::BLUE);
+	//}
+	//
 	//for (std::vector<Vec2> e : pathedges)
 	//{
 	//	lines->DrawLineWithArrow(e[0], e[1], 500);

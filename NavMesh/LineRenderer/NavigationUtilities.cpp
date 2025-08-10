@@ -128,7 +128,7 @@ std::vector<Vec2> StringPull(PathAgent* agent, std::vector<Node*>& path, const s
 	}
 
 	// otherwise do funnel algorithm
-	float agentRadius = agent->GetRadius() * 3;
+	float agentRadius = agent->GetRadius() * 4;
 	Vec2 portalRight = ReturnRightPoint(portals[0], funnelTip);
 	Vec2 portalLeft = ReturnLeftPoint(portals[0], funnelTip);
 	Vec2 direction = (portalRight - portalLeft).Normalise();
@@ -150,8 +150,8 @@ std::vector<Vec2> StringPull(PathAgent* agent, std::vector<Node*>& path, const s
 		right = ReturnRightPoint(portals[i], path[i]->mPosition);
 		direction = (right - left).Normalise();
 
-		left += direction * agentRadius;
 		right -= direction * agentRadius;
+		left += direction * agentRadius;
 
 		agent->AddPortalRight(right);
 		agent->AddPortalLeft(left);
@@ -167,11 +167,14 @@ std::vector<Vec2> StringPull(PathAgent* agent, std::vector<Node*>& path, const s
 
 			funnelTip = portalLeft;
 
-			if (!DoLinesIntersect(funnelTip, endPos, obstacles))
+			if (!DoLinesIntersect(Vec2(funnelTip.x - agentRadius, funnelTip.y - agentRadius), endPos, obstacles) &&
+				!DoLinesIntersect(Vec2(funnelTip.x + agentRadius, funnelTip.y + agentRadius), endPos, obstacles))
 			{
 				returnPath.push_back(path[path.size() - 1]->mPosition);
 				return returnPath;
 			}
+			i--;
+			continue;
 		}
 
 		if (PseudoCross(portalRight - funnelTip, right - funnelTip) >= 0.0f)
@@ -183,16 +186,18 @@ std::vector<Vec2> StringPull(PathAgent* agent, std::vector<Node*>& path, const s
 			returnPath.push_back(portalRight);
 			hitCorner = false;
 			funnelTip = portalRight;
-
-			if (!DoLinesIntersect(funnelTip, endPos, obstacles))
+			
+			if (!DoLinesIntersect(Vec2(funnelTip.x - agentRadius, funnelTip.y - agentRadius ), endPos, obstacles) && 
+				!DoLinesIntersect(Vec2(funnelTip.x + agentRadius , funnelTip.y + agentRadius ), endPos, obstacles))
 			{
 				returnPath.push_back(path[path.size() - 1]->mPosition);
 				return returnPath;
 			}
+			i--;
 		}
 	}
 
-	returnPath.push_back(FindShortestPortal(portalLeft, portalRight, endPos));
+	returnPath.push_back(FindShortestPortal(portalLeft, portalRight, funnelTip));
 	path.erase(path.begin() + path.size() - 1);
 	returnPath.push_back(endPos);
 	return returnPath;

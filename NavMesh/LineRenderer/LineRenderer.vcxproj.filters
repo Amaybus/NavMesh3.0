@@ -80,6 +80,7 @@
     <ClCompile Include="DelaunayTriangulation.cpp">
       <Filter>Game\Mesh Generation</Filter>
     </ClCompile>
+    <ClCompile Include="Node.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GLFWCallbacks.h">

@@ -5,8 +5,8 @@
 
 int main()
 {
-	ApplicationHarness program(new World());	//Create a new instance of your application type to pass into the harness here.
 
+	ApplicationHarness program(new World());	//Create a new instance of your application type to pass into the harness here.
 	program.Run();
 
 	return 0;

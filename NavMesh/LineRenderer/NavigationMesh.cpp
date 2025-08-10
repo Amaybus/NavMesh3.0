@@ -8,6 +8,14 @@ NavigationMesh::NavigationMesh()
 {
 }
 
+NavigationMesh::~NavigationMesh()
+{
+	for (Triangle* t : mTriangles)
+	{
+		delete t;
+	}
+}
+
 void NavigationMesh::Draw(LineRenderer* lines)
 {
 	for (int i = 0; i < mPoints.size(); i++)
@@ -23,11 +31,11 @@ void NavigationMesh::Draw(LineRenderer* lines)
 		lines->AddPointToLine(t->mPoints[2], Colour::WHITE);
 		lines->FinishLineLoop();
 	
-		Vec2 result = t->mPoints[0] + t->mPoints[1] + t->mPoints[2];
-		result /= 3;
-		TextStream output(lines, Vec2(result.x, result.y), 150.0f, Colour::YELLOW);
-		output << index;
-		index++;
+		//Vec2 result = t->mPoints[0] + t->mPoints[1] + t->mPoints[2];
+		//result /= 3;
+		//TextStream output(lines, Vec2(result.x, result.y), 150.0f, Colour::YELLOW);
+		//output << index;
+		//index++;
 	}
 
 	for (Vec2 v : mPoints)

@@ -14,6 +14,14 @@ NodeGraph::NodeGraph(NavigationMesh* navMesh) : mNavMesh(navMesh)
 	ConstructNodeNeighbours(mNavMesh->GetTriangles());
 }
 
+NodeGraph::~NodeGraph()
+{
+	for (Node* n : mNodes)
+	{
+		delete n;
+	}
+}
+
 Node* NodeGraph::GetNodeAt(int index) const
 {
 	if (mNodes.empty()) { return nullptr; }

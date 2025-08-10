@@ -10,6 +10,8 @@
 
 std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std::vector<Obstacle*>& obstacles)
 {
+	std::vector<Triangle*> deleteList;
+
 	for (Obstacle* ob : obstacles)
 	{
 		for (Vec2 v : ob->GetPoints())
@@ -53,6 +55,7 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 		potentialTriangles.push_back(CreateClockwiseTriangle(std::vector<Vec2> {points[i], triangleStack[index]->mPoints[2], triangleStack[index]->mPoints[0]}));
 
 		// Remove the triangle we just replaced (the one that contained the point we are adding)
+		deleteList.push_back(triangleStack[index]);
 		triangleStack.erase(triangleStack.begin() + index);
 
 		// Check if any newly created triangles have collinear points
@@ -75,6 +78,10 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 				if (!IsDuplicateTriangle(tri, triangleStack))
 				{
 					triangleStack.push_back(tri);
+				}
+				else
+				{
+					deleteList.push_back(tri);
 				}
 			}
 		}
@@ -100,14 +107,21 @@ std::vector<Triangle*> DelaunayTriangulate(std::vector<Vec2>& points, const std:
 				if (std::find(std::begin(triangleStack[l]->mPoints), std::end(triangleStack[l]->mPoints), superTriangle[2]) == std::end(triangleStack[l]->mPoints))
 				{
 					returnList.push_back(triangleStack[l]);
+					continue;
 				}
 			}
 		}
+		deleteList.push_back(triangleStack[l]);
 	}
-
+	
 	returnList = ConstrainedDelaunayTriangulation(returnList, obstacles);
 	RemoveTrianglesFromObstacles(obstacles, returnList);
 	RestoreDelauneyness(returnList, points);
+	
+	for (Triangle* t : deleteList)
+	{
+		delete t;
+	}
 
 	return returnList;
 }
@@ -117,9 +131,9 @@ std::vector<Vec2> PoissonDisk(Vec2 startPoint, const std::vector<Obstacle*>& obs
 	std::vector<Vec2> openList;
 	openList.push_back(startPoint);
 	std::vector<Vec2> closedList;
-	int attempts = 100;
-	float minDist = 2;
-	float maxDist = 5;
+	int attempts = 5;
+	float minDist = 10;
+	float maxDist = 15;
 	bool isValid = true;
 
 	while (!openList.empty())
@@ -281,6 +295,7 @@ std::vector<Triangle*> ResolveCollinearTriangles(const std::vector<Triangle*>& c
 				newTri2->mPoints[2] = colTri->mPoints[1];
 				returnTris.push_back(CreateClockwiseTriangle(newTri2->mPoints));
 
+				delete listToCheck[i];
 				listToCheck.erase(listToCheck.begin() + i);
 				break;
 			}
@@ -298,6 +313,7 @@ std::vector<Triangle*> ResolveCollinearTriangles(const std::vector<Triangle*>& c
 				newTri2->mPoints[2] = listToCheck[i]->mPoints[2];
 				returnTris.push_back(CreateClockwiseTriangle(newTri2->mPoints));
 
+				delete listToCheck[i];
 				listToCheck.erase(listToCheck.begin() + i);
 				break;
 			}
@@ -315,11 +331,16 @@ std::vector<Triangle*> ResolveCollinearTriangles(const std::vector<Triangle*>& c
 				newTri2->mPoints[2] = listToCheck[i]->mPoints[0];
 				returnTris.push_back(CreateClockwiseTriangle(newTri2->mPoints));
 
+				delete listToCheck[i];
 				listToCheck.erase(listToCheck.begin() + i);
 				break;
 			}
 		}
 	}
+
+	delete newTri1;
+	delete newTri2;
+
 	return returnTris;
 }
 
@@ -437,12 +458,18 @@ void SwapTriangles(Triangle* triangleToSwap, int triangleIndex, const Vec2& poin
 	// Ensure we remove the higher value first as to not ruin the indices
 	if (triangleIndex > adjacentTriangle.index)
 	{
+		delete listToCheck[triangleIndex];
 		listToCheck.erase(listToCheck.begin() + triangleIndex);
+
+		delete listToCheck[adjacentTriangle.index];
 		listToCheck.erase(listToCheck.begin() + adjacentTriangle.index);
 	}
 	else
 	{
+		delete listToCheck[adjacentTriangle.index];
 		listToCheck.erase(listToCheck.begin() + adjacentTriangle.index);
+
+		delete listToCheck[triangleIndex];
 		listToCheck.erase(listToCheck.begin() + triangleIndex);
 	}
 
@@ -454,10 +481,18 @@ void SwapTriangles(Triangle* triangleToSwap, int triangleIndex, const Vec2& poin
 	{
 		listToCheck.push_back(triangle1);
 	}
+	else
+	{
+		delete triangle1;
+	}
 
 	if (!IsDuplicateTriangle(triangle2, listToCheck) && !IsTriangleCollinear(triangle2))
 	{
 		listToCheck.push_back(triangle2);
+	}
+	else
+	{
+		delete triangle2;
 	}
 }
 
@@ -691,6 +726,12 @@ void HandleOverlappingEdges(std::vector<Triangle*>& listOfTriangles)
 						{
 							listOfTriangles.push_back(newTriangle);
 						}
+						else
+						{
+							delete newTriangle;
+						}
+
+						delete listOfTriangles[j];
 
 						listOfTriangles.erase(listOfTriangles.begin() + j);
 					}
@@ -714,6 +755,12 @@ void RemoveTrianglesFromObstacles(std::vector<Obstacle*> obstacles, std::vector<
 		{
 			triIndexRemoval.push_back(i);
 		}
+	}
+
+	// Delete them all!
+	for (int i : triIndexRemoval)
+	{
+		delete listOfTriangles[i];
 	}
 
 	for (int i = (int)triIndexRemoval.size() - 1; i >= 0; i--)
@@ -826,6 +873,7 @@ void HandleOverlapsWithObstacleEdges(std::vector<TriEdge> constraintEdges, std::
 			auto it = std::find(listOfTriangles.begin(), listOfTriangles.end(), t);
 			if (it != listOfTriangles.end())
 			{
+				delete listOfTriangles[it - listOfTriangles.begin()];
 				listOfTriangles.erase(it);
 			}
 		}

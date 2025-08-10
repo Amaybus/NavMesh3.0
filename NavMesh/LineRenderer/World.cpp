@@ -103,6 +103,7 @@ void World::Initialise()
 
 void World::Update(float delta)
 {
+
 	Draw(lines);
 
 	if (ImGui::Begin("Tools"))
@@ -130,7 +131,7 @@ void World::Update(float delta)
 	{
 		if (ImGui::Button("Add Agent", ImVec2(100, 20)))
 		{
-			PathAgent* agent = new PathAgent(mNodeGraph, 300.0f, Colour::BLUE, this);
+			PathAgent* agent = new PathAgent(mNodeGraph, 300.0f, Colour::MAGENTA, this);
 			mPathAgents.push_back(agent);
 		}
 	}
@@ -140,11 +141,7 @@ void World::Update(float delta)
 		ImGui::Checkbox("Show single node connections", &bShowSingleNodeConnections);
 		ImGui::Checkbox("Show all node connections", &bShowAllNodeConnections);
 		ImGui::Checkbox("Show agent paths", &bShowAgentPaths);
-
-		if (bShowAgentPaths && mNumberOfAgents > 0)
-		{
-			ImGui::SliderInt("Node Index", &mAgentIndex, 0, mNumberOfAgents - 1);
-		}
+		ImGui::SliderInt("Agent Index", &mAgentIndex, 0, mPathAgents.size() - 1);
 
 		if (bShowSingleNodeConnections && mNodeGraph)
 		{
@@ -247,7 +244,7 @@ std::vector<Vec2> World::LineTrace(Vec2 startPos, Grid& grid, TileType tileType)
 			}
 		}
 
-		if (grid.At(currentPos.x + secDir.x,currentPos.y + secDir.y) != tileType && grid.At(currentPos.x + primDir.x, currentPos.y + primDir.y) == tileType)
+		if (grid.At(currentPos.x + secDir.x, currentPos.y + secDir.y) != tileType && grid.At(currentPos.x + primDir.x, currentPos.y + primDir.y) == tileType)
 		{
 			// Move forward a tile
 			currentPos += primDir;
@@ -371,5 +368,9 @@ void World::DrawCircumcircles(LineRenderer* lines)
 void World::OnLeftClick()
 {
 	if (mPathAgents.empty()) { return; }
-	mPathAgents[mAgentIndex]->GoTo(cursorPos);
+
+	for (PathAgent* pathagent : mPathAgents)
+	{
+		pathagent->GoTo(cursorPos);
+	}
 }

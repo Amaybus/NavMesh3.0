@@ -16,6 +16,7 @@ class NodeGraph
 
 public:
 	NodeGraph(NavigationMesh* navMesh);
+	~NodeGraph();
 	Node* GetNodeAt(int index) const;
 	void ConstructNodeNeighbours(std::vector<Triangle*>& triangleList);
 
@@ -27,5 +28,6 @@ public:
 	Node* GetClosestNode(Vec2 pos);
 	Node* GetNode(Vec2 pos);
 	NavigationMesh* GetNavMesh() { return mNavMesh; }
+	Node* GetNodeAtIndex(int index) { return mNodes[index]; }
 };
 

@@ -35,7 +35,6 @@ class World : public Application
 	int mNodeIndex = 0;
 	int mTriangleIndex = 0;
 	int mAgentIndex = 0;
-	int mNumberOfAgents = 0;
 
 public:
 	World();

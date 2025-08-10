@@ -55,6 +55,8 @@ public:
 	void ClearPortals() { portalLeft.clear(); portalRight.clear(); }
 	World* GetWorld() { return mCurrentWorld; }
 	std::vector<std::vector<Vec2>> pathedges;
+	std::vector<Vec2> GetPath() { return mPointPath; }
+
 
 };
 

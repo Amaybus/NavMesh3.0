@@ -166,6 +166,7 @@
     <ClCompile Include="LineRenderer.cpp" />
     <ClCompile Include="NavigationMesh.cpp" />
     <ClCompile Include="NavigationUtilities.cpp" />
+    <ClCompile Include="Node.cpp" />
     <ClCompile Include="NodeGraph.cpp" />
     <ClCompile Include="Obstacle.cpp" />
     <ClCompile Include="PathAgent.cpp" />
