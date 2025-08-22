@@ -6,6 +6,7 @@
 #include "Key.h"
 #include <algorithm>
 #include "PathAgent.h"
+#include "Vehicle.h"
 #include "DelaunayTriangulation.h"
 
 World::World()
@@ -133,6 +134,11 @@ void World::Update(float delta)
 		{
 			PathAgent* agent = new PathAgent(mNodeGraph, 300.0f, Colour::MAGENTA, this);
 			mPathAgents.push_back(agent);
+		}
+		if (ImGui::Button("Add Vehicle", ImVec2(100, 20)))
+		{
+			Vehicle* vehicle = new Vehicle(mNodeGraph, 300.0f, Colour::BLUE, this);
+			mPathAgents.push_back(vehicle);
 		}
 	}
 

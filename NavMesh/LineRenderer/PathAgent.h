@@ -12,6 +12,7 @@ class LineRenderer;
 
 class PathAgent
 {
+protected:
 	Vec2 mPosition;
 	float mSpeed = 1000;
 	Node* mCurrentNode;
@@ -33,7 +34,7 @@ class PathAgent
 public:
 	PathAgent(NodeGraph* nodeGraph, float width, Colour colour, World* world);
 
-	void Update(float deltaTime);
+	virtual void Update(float deltaTime);
 	void Draw(LineRenderer* lines);
 
 	void NavigateNodePath(float deltaTime);

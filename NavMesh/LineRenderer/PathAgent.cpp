@@ -20,8 +20,7 @@ void PathAgent::Update(float deltaTime)
 
 	if(mPointPath.empty()) { GoToNode(mNodeGraph->GetNodeAtIndex(randNum)); }
 
-	else if (!mNodePath.empty()) { NavigateNodePath(deltaTime); }
-	else { NavigatePointPath(deltaTime); }
+	 NavigatePointPath(deltaTime);
 }
 
 void PathAgent::NavigateNodePath(float deltaTime)

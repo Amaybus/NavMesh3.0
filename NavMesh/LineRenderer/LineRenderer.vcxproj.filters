@@ -81,6 +81,7 @@
       <Filter>Game\Mesh Generation</Filter>
     </ClCompile>
     <ClCompile Include="Node.cpp" />
+    <ClCompile Include="Vehicle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GLFWCallbacks.h">
@@ -197,6 +198,7 @@
     <ClInclude Include="DelaunayTriangulation.h">
       <Filter>Game\Mesh Generation</Filter>
     </ClInclude>
+    <ClInclude Include="Vehicle.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Engine">
